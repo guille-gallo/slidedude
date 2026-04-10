@@ -16,14 +16,14 @@ interface SpringConfig {
 }
 
 export const SPRING_PRESETS = {
-  /** Snappy movement with tiny overshoot — great for token repositioning */
-  snappy: { stiffness: 300, damping: 28, mass: 1 } as SpringConfig,
-  /** Gentle entrance with soft settle — good for fade/scale in */
-  gentle: { stiffness: 200, damping: 22, mass: 1 } as SpringConfig,
-  /** Bouncy with visible overshoot — for playful emphasis */
-  bouncy: { stiffness: 400, damping: 18, mass: 1 } as SpringConfig,
-  /** Critically damped — smooth with zero overshoot */
-  smooth: { stiffness: 200, damping: 28, mass: 1 } as SpringConfig,
+  /** Relaxed movement for token repositioning (~1.5s) */
+  snappy: { stiffness: 120, damping: 20, mass: 1.8 } as SpringConfig,
+  /** Gentle entrance with soft settle (~1.8s) */
+  gentle: { stiffness: 80, damping: 16, mass: 1.8 } as SpringConfig,
+  /** Bouncy with visible overshoot */
+  bouncy: { stiffness: 150, damping: 14, mass: 1.8 } as SpringConfig,
+  /** Smooth settle for exits (~1.5s) */
+  smooth: { stiffness: 90, damping: 22, mass: 1.8 } as SpringConfig,
 } as const;
 
 const STEP = 1 / 120; // simulate at 120Hz for accuracy
