@@ -3,7 +3,8 @@
 import { useEffect, useCallback, useState, useRef } from "react";
 import type { Slide } from "@/types";
 import { useHighlighter } from "@/hooks/use-highlighter";
-import { CodeMorph } from "./code-morph";
+import { ShikiMagicMove } from "shiki-magic-move/react";
+import "shiki-magic-move/dist/style.css";
 import Image from "next/image";
 
 interface PresentationModeProps {
@@ -23,29 +24,17 @@ export function PresentationMode({
 
   const currentSlide = slides[currentIndex];
 
-  const navigating = useRef(false);
+  const animating = useRef(false);
 
   const next = useCallback(() => {
-    if (navigating.current) return;
-    const nextIdx = Math.min(currentIndex + 1, slides.length - 1);
-    if (nextIdx === currentIndex) return;
-    navigating.current = true;
-    setTimeout(() => {
-      setCurrentIndex(nextIdx);
-      navigating.current = false;
-    }, 300);
-  }, [currentIndex, slides.length]);
+    if (animating.current) return;
+    setCurrentIndex((i) => Math.min(i + 1, slides.length - 1));
+  }, [slides.length]);
 
   const prev = useCallback(() => {
-    if (navigating.current) return;
-    const prevIdx = Math.max(currentIndex - 1, 0);
-    if (prevIdx === currentIndex) return;
-    navigating.current = true;
-    setTimeout(() => {
-      setCurrentIndex(prevIdx);
-      navigating.current = false;
-    }, 300);
-  }, [currentIndex]);
+    if (animating.current) return;
+    setCurrentIndex((i) => Math.max(i - 1, 0));
+  }, []);
 
   useEffect(() => {
     containerRef.current?.focus();
@@ -85,13 +74,22 @@ export function PresentationMode({
                   {currentSlide.title}
                 </h1>
               )}
-              <div className="w-full min-h-0 overflow-auto p-6">
+              <div className="w-full min-h-0 overflow-hidden p-6">
                 {highlighter ? (
-                  <CodeMorph
+                  <ShikiMagicMove
                     highlighter={highlighter}
                     code={currentSlide.code}
                     lang={currentSlide.language}
                     theme={currentSlide.theme}
+                    options={{
+                      duration: 800,
+                      stagger: 0.3,
+                      lineNumbers: false,
+                      animateContainer: true,
+                    }}
+                    onStart={() => { animating.current = true; }}
+                    onEnd={() => { animating.current = false; }}
+                    className="magic-move-code"
                   />
                 ) : (
                   <pre className="text-zinc-300">

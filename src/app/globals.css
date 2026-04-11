@@ -27,3 +27,30 @@ body {
 .shiki-magic-move-container {
   font-family: var(--font-mono), monospace;
 }
+
+/* Pop-up entrance: tokens scale up from slightly smaller + fade in */
+.shiki-magic-move-enter-from {
+  opacity: 0;
+  transform: scale(0.92) translateY(3px);
+}
+
+/* Smooth exit: tokens shrink slightly + drift up + fade out */
+.shiki-magic-move-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(-4px);
+}
+
+/* Move tokens get a slight z-lift so they feel "above" the rest */
+.shiki-magic-move-move {
+  z-index: 2;
+}
+
+/* Presentation-mode styling */
+.magic-move-code {
+  font-size: 15px;
+  line-height: 1.6;
+  font-variant-ligatures: none;
+  tab-size: 2;
+  background: transparent !important;
+  overflow: hidden !important;
+}
