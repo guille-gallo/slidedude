@@ -1,20 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --sidebar: #1a1a2e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-sidebar: var(--sidebar);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
 }
 
 body {
@@ -43,6 +40,12 @@ body {
 /* Move tokens get a slight z-lift so they feel "above" the rest */
 .shiki-magic-move-move {
   z-index: 2;
+}
+
+/* Strip Shiki theme background in the overlay editor */
+.shiki-overlay-editor pre,
+.shiki-overlay-editor pre code {
+  background: transparent !important;
 }
 
 /* Presentation-mode styling */

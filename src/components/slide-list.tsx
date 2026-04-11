@@ -59,7 +59,7 @@ function SortableSlideItem({
       className={`group relative cursor-pointer rounded-lg border-2 p-3 transition-colors ${
         isActive
           ? "border-blue-500 bg-blue-500/10"
-          : "border-zinc-200 bg-zinc-50 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500"
+          : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-500"
       }`}
     >
       <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ function SortableSlideItem({
           {slide.type}
         </span>
       </div>
-      <p className="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="mt-1 truncate text-xs text-zinc-400">
         {slide.title || (slide.type === "code" ? slide.code.slice(0, 40) : "No title")}
       </p>
       <button
@@ -164,7 +164,7 @@ export function SlideList({
         </DndContext>
       </div>
 
-      <div className="flex gap-1 border-t border-zinc-200 p-2 dark:border-zinc-800">
+      <div className="flex gap-1 border-t border-zinc-800 p-2">
         <button
           onClick={() => onAddSlide("code")}
           className="flex flex-1 items-center justify-center gap-1 rounded-md bg-emerald-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"

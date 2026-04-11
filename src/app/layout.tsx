@@ -19,7 +19,7 @@ const firaCode = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  title: "Slido — Animated Code Presentations",
+  title: "slidedude — Animated Code Presentations",
   description: "Create beautiful, animated code presentations with Shiki Magic Move",
 };
 

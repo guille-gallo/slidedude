@@ -10,7 +10,6 @@ function createDefaultCodeSlide(): CodeSlide {
     title: "",
     code: 'const hello = "world";',
     language: "typescript",
-    theme: "github-dark",
   };
 }
 
@@ -212,7 +211,7 @@ export const usePresentationStore = create<PresentationState>()(
       };
     },
     {
-      name: "slido-presentations",
+      name: "slidedude-presentations",
       partialize: (state) => ({
         presentations: state.presentations,
         activePresentationId: state.activePresentationId,

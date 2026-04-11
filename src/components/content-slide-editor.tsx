@@ -67,7 +67,7 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
           onChange={(e) => onChange({ title: e.target.value })}
           placeholder="Slide title"
           style={{ fontSize: `${Math.min(slide.fontSize, 48)}px` }}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 font-semibold outline-none focus:border-blue-500 dark:border-zinc-700"
+          className="rounded-md border border-zinc-700 bg-transparent px-3 py-2 font-semibold outline-none focus:border-blue-500"
         />
 
         <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
           value={slide.body}
           onChange={(e) => onChange({ body: e.target.value })}
           onPaste={handlePaste}
-          className="flex-1 resize-none rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-zinc-700"
+          className="flex-1 resize-none rounded-md border border-zinc-700 bg-transparent px-3 py-2 text-sm outline-none focus:border-blue-500"
           placeholder="Body text… (paste an image here too)"
         />
 
@@ -95,7 +95,7 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => fileInputRef.current?.click()}
-          className="flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-zinc-300 p-4 text-sm text-zinc-400 transition-colors hover:border-blue-400 hover:text-blue-400 dark:border-zinc-700"
+          className="flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-zinc-700 p-4 text-sm text-zinc-400 transition-colors hover:border-blue-400 hover:text-blue-400"
         >
           {slide.imageDataUrl ? (
             <div className="relative">
@@ -134,21 +134,18 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
       </div>
 
       {/* Right: live preview */}
-      <div className="flex w-1/2 flex-col items-center justify-center overflow-auto rounded-lg border border-zinc-200 bg-zinc-950 p-8 dark:border-zinc-800">
-        <p className="mb-4 self-start text-xs font-medium uppercase tracking-wider text-zinc-500">
-          Preview
-        </p>
-        <div className="flex flex-1 flex-col items-center justify-center gap-4">
+      <div className="flex w-1/2 flex-col items-center justify-center overflow-auto rounded-lg bg-[#000] p-8">
+        <div className="flex flex-1 flex-col items-center justify-center gap-6">
           {slide.title && (
-            <h2
-              className="text-center font-semibold text-zinc-100"
+            <h1
+              className="text-center font-bold text-zinc-100"
               style={{ fontSize: `${slide.fontSize}px` }}
             >
               {slide.title}
-            </h2>
+            </h1>
           )}
           {slide.body && (
-            <p className="max-w-md whitespace-pre-wrap text-center text-zinc-300">{slide.body}</p>
+            <p className="max-w-2xl whitespace-pre-wrap text-center text-xl text-zinc-300">{slide.body}</p>
           )}
           {slide.imageDataUrl && (
             <Image
@@ -156,7 +153,7 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
               alt="Slide image"
               width={600}
               height={400}
-              className="max-h-64 rounded-lg object-contain"
+              className="max-h-[60vh] rounded-xl object-contain shadow-2xl"
               unoptimized
             />
           )}

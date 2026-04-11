@@ -6,14 +6,6 @@ import { createHighlighter } from "shiki/bundle/web";
 
 const THEMES = [
   "github-dark",
-  "github-light",
-  "nord",
-  "vitesse-dark",
-  "vitesse-light",
-  "one-dark-pro",
-  "dracula",
-  "min-dark",
-  "min-light",
 ] as const;
 
 const INITIAL_LANGS = [
@@ -31,7 +23,6 @@ const INITIAL_LANGS = [
 export type SupportedTheme = (typeof THEMES)[number];
 export type SupportedLang = (typeof INITIAL_LANGS)[number];
 
-export const THEME_LIST: readonly string[] = THEMES;
 export const LANG_LIST: readonly string[] = INITIAL_LANGS;
 
 let highlighterPromise: Promise<HighlighterCore> | null = null;

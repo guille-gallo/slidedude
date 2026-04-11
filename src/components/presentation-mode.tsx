@@ -80,7 +80,7 @@ export function PresentationMode({
                     highlighter={highlighter}
                     code={currentSlide.code}
                     lang={currentSlide.language}
-                    theme={currentSlide.theme}
+                    theme="github-dark"
                     options={{
                       duration: 800,
                       stagger: 0.3,

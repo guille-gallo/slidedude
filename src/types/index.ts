@@ -4,7 +4,6 @@ export interface CodeSlide {
   title: string;
   code: string;
   language: string;
-  theme: string;
 }
 
 export interface ContentSlide {
