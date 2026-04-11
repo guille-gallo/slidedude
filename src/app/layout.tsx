@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Fira_Code } from "next/font/google";
+import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,7 +35,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${firaCode.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="h-full">{children}</body>
+      <body className="h-full">
+        <SessionProvider>{children}</SessionProvider>
+      </body>
     </html>
   );
 }

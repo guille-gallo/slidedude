@@ -26,6 +26,27 @@ export function PresentationMode({
 
   const animating = useRef(false);
 
+  // Fullscreen API
+  useEffect(() => {
+    document.documentElement.requestFullscreen?.().catch(() => {});
+    return () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    };
+  }, []);
+
+  // Sync exit via browser fullscreen (e.g. Esc handled by browser)
+  useEffect(() => {
+    function handleFullscreenChange() {
+      if (!document.fullscreenElement) {
+        onExit();
+      }
+    }
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [onExit]);
+
   const next = useCallback(() => {
     if (animating.current) return;
     setCurrentIndex((i) => Math.min(i + 1, slides.length - 1));
@@ -50,7 +71,12 @@ export function PresentationMode({
         prev();
       } else if (e.key === "Escape" || e.key === "F5") {
         e.preventDefault();
-        onExit();
+        // Exit fullscreen first, which will trigger onExit via fullscreenchange
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.().catch(() => onExit());
+        } else {
+          onExit();
+        }
       }
     },
     [next, prev, onExit],
