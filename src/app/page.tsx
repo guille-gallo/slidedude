@@ -14,15 +14,14 @@ import type { CodeSlide, ContentSlide } from "@/types";
 /** Wait for Zustand persist to rehydrate from localStorage before rendering.
  *  Always starts false to avoid SSR rendering store defaults that mismatch the client. */
 function useHydration() {
-  const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(() =>
+    usePresentationStore.persist.hasHydrated()
+  );
   useEffect(() => {
-    if (usePresentationStore.persist.hasHydrated()) {
-      setHydrated(true);
-    } else {
-      const unsub = usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
-      return unsub;
+    if (!hydrated) {
+      return usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
     }
-  }, []);
+  }, [hydrated]);
   return hydrated;
 }
 
