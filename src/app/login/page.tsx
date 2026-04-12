@@ -4,16 +4,20 @@ import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-8 bg-background text-foreground">
-      <div className="flex flex-col items-center gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">slidedude</h1>
+    <div className="flex h-full flex-col items-center justify-center gap-10 bg-background text-foreground">
+      {/* Subtle radial glow behind the logo */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="h-[400px] w-[400px] rounded-full bg-emerald-500/[0.04] blur-3xl" />
+      </div>
+      <div className="relative flex flex-col items-center gap-3">
+        <h1 className="font-mono text-4xl font-semibold tracking-wide text-white">slidedude<span className="text-emerald-400">_</span></h1>
         <p className="text-sm text-zinc-500">
-          Animated code presentations
+          Animated code presentations for developers
         </p>
       </div>
       <button
         onClick={() => signIn("google", { callbackUrl: "/" })}
-        className="flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800/80 px-6 py-3 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-700"
+        className="relative flex items-center gap-3 rounded-xl border border-[--border-bright] bg-white/[0.03] px-6 py-3 text-sm font-medium text-zinc-200 shadow-lg shadow-black/30 backdrop-blur-sm transition-all hover:border-[--border-bright] hover:bg-white/[0.06] hover:shadow-xl active:scale-[0.98]"
       >
         <svg width="18" height="18" viewBox="0 0 24 24">
           <path

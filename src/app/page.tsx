@@ -10,6 +10,8 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { UserMenu } from "@/components/user-menu";
 import { exportPresentation, importPresentation } from "@/utils/export-import";
 import type { CodeSlide, ContentSlide } from "@/types";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Download, Upload, PlayIcon } from "lucide-react";
 
 /** Wait for Zustand persist to rehydrate from localStorage before rendering.
  *  Always starts false to avoid SSR rendering store defaults that mismatch the client. */
@@ -159,42 +161,43 @@ export default function Home() {
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
       {store.storageWarning && (
-        <div className="bg-amber-600 px-4 py-1.5 text-center text-xs font-medium text-white">
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-center text-xs font-medium text-amber-400">
           Local storage is full. Your data is synced to the cloud, but local backup may be incomplete.
         </div>
       )}
 
-      {/* Top bar */}
-      <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-2">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-bold tracking-tight">slidedude</h1>
+      {/* Top bar — glassmorphic */}
+      <header className="relative z-10 flex items-center justify-between border-b border-[--border] bg-[--surface]/80 px-5 py-2.5 backdrop-blur-xl">
+        <div className="flex items-center gap-4">
+          <h1 className="font-mono text-base font-semibold tracking-wide text-white">slidedude<span className="text-emerald-400">_</span></h1>
+          <span className="h-4 w-px bg-[--border-bright]" />
           <input
             type="text"
             value={presentation.name}
             onChange={(e) => store.renamePresentation(presentation.id, e.target.value)}
-            className="rounded border border-transparent bg-transparent px-2 py-0.5 text-sm text-zinc-400 outline-none hover:border-zinc-700 focus:border-blue-500"
+            className="input-glow rounded-md border border-transparent bg-transparent px-2 py-0.5 text-sm text-zinc-400 outline-none transition-all hover:border-[--border-bright] focus:border-[--accent]"
           />
           {syncLabel && (
             <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-              <span className={`inline-block h-2 w-2 rounded-full ${syncDot}`} />
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${syncDot}`} />
               {syncLabel}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={handleExport}
-            className="rounded px-2 py-1 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
             title="Export presentation"
           >
-            ↓ Export
+            <Download className="h-3.5 w-3.5" /> Export
           </button>
           <button
             onClick={handleImport}
-            className="rounded px-2 py-1 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
             title="Import presentation"
           >
-            ↑ Import
+            <Upload className="h-3.5 w-3.5" /> Import
           </button>
           <input
             ref={fileInputRef}
@@ -203,11 +206,12 @@ export default function Home() {
             onChange={handleFileChange}
             className="hidden"
           />
+          <span className="mx-1 h-4 w-px bg-[--border-bright]" />
           <button
             onClick={() => setShowPresentation(true)}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            className="flex items-center gap-1.5 rounded-md bg-emerald-500 px-4 py-1.5 text-sm font-medium text-black shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 hover:shadow-emerald-500/30 active:scale-[0.98]"
           >
-            ▶ Present
+            <PlayIcon className="h-3.5 w-3.5" /> Present
           </button>
           <UserMenu />
         </div>
@@ -215,36 +219,42 @@ export default function Home() {
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-56 shrink-0 border-r border-zinc-800">
-          <SlideList
-            slides={presentation.slides}
-            activeIndex={presentation.activeSlideIndex}
-            onSelect={(index) => store.setActiveSlideIndex(index)}
-            onReorder={(from, to) => store.reorderSlide(from, to)}
-            onAddSlide={(type) => store.addSlide(type)}
-            onRemoveSlide={(index) => store.removeSlide(index)}
-            onDuplicateSlide={(index) => store.duplicateSlide(index)}
-          />
-        </aside>
+        <PanelGroup direction="horizontal" className="h-full w-full">
+          {/* Sidebar Panel */}
+          <Panel defaultSize={18} minSize={14} maxSize={28} className="flex h-full flex-col border-r border-[--border] bg-[--sidebar]">
+            <SlideList
+              slides={presentation.slides}
+              activeIndex={presentation.activeSlideIndex}
+              onSelect={(index) => store.setActiveSlideIndex(index)}
+              onReorder={(from, to) => store.reorderSlide(from, to)}
+              onAddSlide={(type) => store.addSlide(type)}
+              onRemoveSlide={(index) => store.removeSlide(index)}
+              onDuplicateSlide={(index) => store.duplicateSlide(index)}
+            />
+          </Panel>
 
-        {/* Editor */}
-        <main className="flex-1 overflow-auto bg-sidebar p-4">
-          <ErrorBoundary>
-            {activeSlide?.type === "code" && (
-              <CodeSlideEditor
-                slide={activeSlide}
-                onChange={handleSlideUpdate}
-              />
-            )}
-            {activeSlide?.type === "content" && (
-              <ContentSlideEditor
-                slide={activeSlide}
-                onChange={handleSlideUpdate}
-              />
-            )}
-          </ErrorBoundary>
-        </main>
+          <PanelResizeHandle className="resize-handle relative w-[5px] bg-transparent" />
+
+          {/* Editor Panel */}
+          <Panel defaultSize={82} minSize={40} className="flex h-full flex-col bg-[--surface]">
+            <main className="flex-1 overflow-auto p-5">
+              <ErrorBoundary>
+                {activeSlide?.type === "code" && (
+                  <CodeSlideEditor
+                    slide={activeSlide}
+                    onChange={handleSlideUpdate}
+                  />
+                )}
+                {activeSlide?.type === "content" && (
+                  <ContentSlideEditor
+                    slide={activeSlide}
+                    onChange={handleSlideUpdate}
+                  />
+                )}
+              </ErrorBoundary>
+            </main>
+          </Panel>
+        </PanelGroup>
       </div>
     </div>
   );

@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Slide } from "@/types";
+import { GripVertical, Copy, Trash2, Code2, Type } from "lucide-react";
 
 interface SlideListProps {
   slides: Slide[];
@@ -59,82 +60,57 @@ function SortableSlideItem({
       ref={setNodeRef}
       style={style}
       onClick={onSelect}
-      className={`group relative cursor-pointer rounded-lg border-2 p-3 transition-colors ${
+      className={`group relative cursor-pointer rounded-lg border p-2.5 transition-all duration-150 ${
         isActive
-          ? "border-blue-500 bg-blue-500/10"
-          : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-500"
+          ? "border-emerald-500/30 bg-emerald-500/[0.04] shadow-[0_0_8px_-4px_rgba(52,211,153,0.15)]"
+          : "border-[--border] bg-white/[0.02] hover:border-[--border-bright] hover:bg-white/[0.04]"
       }`}
     >
       <div className="flex items-center gap-2">
-        {/* Drag handle */}
         <span
           {...attributes}
           {...listeners}
-          className="cursor-grab touch-none text-xs text-zinc-400 hover:text-zinc-300"
+          className="cursor-grab touch-none text-zinc-600 transition-colors hover:text-zinc-400"
           onClick={(e) => e.stopPropagation()}
         >
-          ⠿
+          <GripVertical className="h-3 w-3" />
         </span>
-        <span className="text-xs font-medium text-zinc-400">{index + 1}</span>
+        <span className={`font-mono text-[10px] ${isActive ? "text-emerald-400" : "text-zinc-600"}`}>{String(index + 1).padStart(2, "0")}</span>
         <span
-          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+          className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
             slide.type === "code"
-              ? "bg-emerald-500/20 text-emerald-400"
-              : "bg-purple-500/20 text-purple-400"
+              ? "bg-emerald-500/10 text-emerald-500"
+              : "bg-violet-500/10 text-violet-400"
           }`}
         >
           {slide.type}
         </span>
       </div>
-      <p className="mt-1 truncate text-xs text-zinc-400">
-        {slide.title || (slide.type === "code" ? slide.code.slice(0, 40) : "No title")}
+      <p className="mt-1.5 truncate text-xs text-zinc-500">
+        {slide.title || (slide.type === "code" ? slide.code.slice(0, 40) : "Untitled")}
       </p>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDuplicate();
-        }}
-        className="absolute right-7 top-1 hidden rounded p-0.5 text-zinc-400 hover:bg-blue-500/20 hover:text-blue-400 group-hover:block"
-        title="Duplicate slide"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      <div className="absolute right-1 top-1 hidden items-center gap-0.5 group-hover:flex">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDuplicate();
+          }}
+          className="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
+          title="Duplicate slide"
         >
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-        </svg>
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          if (window.confirm("Delete this slide?")) onRemove();
-        }}
-        className="absolute right-1 top-1 hidden rounded p-0.5 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 group-hover:block"
-        title="Remove slide"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          <Copy className="h-3 w-3" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.confirm("Delete this slide?")) onRemove();
+          }}
+          className="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-red-500/10 hover:text-red-400"
+          title="Remove slide"
         >
-          <path d="M18 6 6 18" />
-          <path d="m6 6 12 12" />
-        </svg>
-      </button>
+          <Trash2 className="h-3 w-3" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -168,14 +144,15 @@ export function SlideList({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-3 py-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Slides</h2>
+      <div className="flex items-center justify-between px-3 py-3">
+        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-white">Slides</h2>
+        <span className="rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] font-mono text-white">{slides.length}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={slideIds} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1">
               {slides.map((slide, index) => (
                 <SortableSlideItem
                   key={slide.id}
@@ -192,18 +169,18 @@ export function SlideList({
         </DndContext>
       </div>
 
-      <div className="flex gap-1 border-t border-zinc-800 p-2">
+      <div className="flex gap-1.5 border-t border-[--border] p-2.5">
         <button
           onClick={() => onAddSlide("code")}
-          className="flex flex-1 items-center justify-center gap-1 rounded-md bg-emerald-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2 py-2 text-[11px] font-medium text-zinc-400 transition-all hover:border-emerald-500/30 hover:bg-white/[0.04] hover:text-emerald-400"
         >
-          + Code
+          <Code2 className="h-3.5 w-3.5" /> Code
         </button>
         <button
           onClick={() => onAddSlide("content")}
-          className="flex flex-1 items-center justify-center gap-1 rounded-md bg-purple-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-purple-700"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2 py-2 text-[11px] font-medium text-zinc-400 transition-all hover:border-violet-500/30 hover:bg-white/[0.04] hover:text-violet-400"
         >
-          + Content
+          <Type className="h-3.5 w-3.5" /> Content
         </button>
       </div>
     </div>

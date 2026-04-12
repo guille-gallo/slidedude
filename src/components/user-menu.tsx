@@ -9,21 +9,20 @@ export function UserMenu() {
   if (!session?.user) return null;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 ml-1">
       {session.user.image && (
         <Image
           src={session.user.image}
           alt=""
-          width={24}
-          height={24}
-          className="rounded-full"
+          width={22}
+          height={22}
+          className="rounded-full ring-1 ring-white/[0.06]"
           unoptimized
         />
       )}
-      <span className="text-xs text-zinc-400">{session.user.email}</span>
       <button
         onClick={() => signOut({ callbackUrl: "/login" })}
-        className="rounded px-2 py-1 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+        className="rounded-md px-2 py-1 text-xs text-zinc-600 transition-all hover:bg-white/[0.04] hover:text-zinc-400"
       >
         Sign out
       </button>

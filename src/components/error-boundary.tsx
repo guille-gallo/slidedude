@@ -31,21 +31,24 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
 
       return (
-        <div className="flex h-full flex-col items-center justify-center gap-4 bg-background p-8 text-foreground">
-          <h2 className="text-xl font-bold text-red-400">Something went wrong</h2>
-          <p className="max-w-md text-center text-sm text-zinc-400">
+        <div className="flex h-full flex-col items-center justify-center gap-5 bg-background p-8 text-foreground">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+          <h2 className="text-lg font-semibold text-zinc-200">Something went wrong</h2>
+          <p className="max-w-md text-center text-sm text-zinc-500">
             {this.state.error?.message ?? "An unexpected error occurred."}
           </p>
           <div className="flex gap-3">
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-black transition-all hover:bg-emerald-400 active:scale-[0.98]"
             >
               Try again
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800"
+              className="rounded-lg border border-[--border-bright] bg-white/[0.02] px-4 py-2 text-sm text-zinc-400 transition-all hover:bg-white/[0.06]"
             >
               Reload page
             </button>
