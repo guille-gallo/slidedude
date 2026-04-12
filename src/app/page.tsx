@@ -11,14 +11,17 @@ import { UserMenu } from "@/components/user-menu";
 import { exportPresentation, importPresentation } from "@/utils/export-import";
 import type { CodeSlide, ContentSlide } from "@/types";
 
-/** Wait for Zustand persist to rehydrate from localStorage before rendering */
+/** Wait for Zustand persist to rehydrate from localStorage before rendering.
+ *  Always starts false to avoid SSR rendering store defaults that mismatch the client. */
 function useHydration() {
-  const [hydrated, setHydrated] = useState(
-    () => usePresentationStore.persist.hasHydrated()
-  );
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    const unsub = usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
-    return unsub;
+    if (usePresentationStore.persist.hasHydrated()) {
+      setHydrated(true);
+    } else {
+      const unsub = usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
+      return unsub;
+    }
   }, []);
   return hydrated;
 }
