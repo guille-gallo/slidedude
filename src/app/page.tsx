@@ -13,17 +13,25 @@ import type { CodeSlide, ContentSlide } from "@/types";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Download, Upload, PlayIcon } from "lucide-react";
 
-/** Wait for Zustand persist to rehydrate from localStorage before rendering.
- *  Always starts false to avoid SSR rendering store defaults that mismatch the client. */
-function useHydration() {
-  const [hydrated, setHydrated] = useState(() =>
-    usePresentationStore.persist.hasHydrated()
+function Star() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="h-full w-full fill-emerald-300">
+      <path d="M392.05 0c-20.9,210.08-184.06,378.41-392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93-210.06 184.09-378.37 392.05-407.74-207.98-29.38-371.16-197.69-392.06-407.78z" />
+    </svg>
   );
+}
+
+/** Wait for Zustand persist to rehydrate from localStorage before rendering.
+ *  Always starts false on the server to guarantee matching first render. */
+function useHydration() {
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    if (!hydrated) {
+    if (usePresentationStore.persist.hasHydrated()) {
+      setHydrated(true);
+    } else {
       return usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
     }
-  }, [hydrated]);
+  }, []);
   return hydrated;
 }
 
@@ -209,9 +217,33 @@ export default function Home() {
           <span className="mx-1 h-4 w-px bg-[--border-bright]" />
           <button
             onClick={() => setShowPresentation(true)}
-            className="flex items-center gap-1.5 rounded-md bg-emerald-500 px-4 py-1.5 text-sm font-medium text-black shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 hover:shadow-emerald-500/30 active:scale-[0.98]"
+            className="group relative flex items-center gap-1.5 overflow-visible rounded-md bg-emerald-500 px-4 py-1.5 text-sm font-medium text-black shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:bg-transparent hover:text-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] active:scale-95"
           >
             <PlayIcon className="h-3.5 w-3.5" /> Present
+            {/* Star 1 */}
+            <div className="pointer-events-none absolute left-[20%] top-[20%] z-[-1] w-[14px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-1000 ease-[cubic-bezier(0.05,0.83,0.43,0.96)] group-hover:left-[-10%] group-hover:top-[-40%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+              <Star />
+            </div>
+            {/* Star 2 */}
+            <div className="pointer-events-none absolute left-[45%] top-[45%] z-[-1] w-[10px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[15%] group-hover:top-[-15%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+              <Star />
+            </div>
+            {/* Star 3 */}
+            <div className="pointer-events-none absolute left-[40%] top-[40%] z-[-1] w-[5px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[30%] group-hover:top-[120%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+              <Star />
+            </div>
+            {/* Star 4 */}
+            <div className="pointer-events-none absolute left-[40%] top-[20%] z-[-1] w-[6px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-800 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[85%] group-hover:top-[-20%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+              <Star />
+            </div>
+            {/* Star 5 */}
+            <div className="pointer-events-none absolute left-[45%] top-[25%] z-[-1] w-[10px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-600 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[100%] group-hover:top-[30%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+              <Star />
+            </div>
+            {/* Star 6 */}
+            <div className="pointer-events-none absolute left-[50%] top-[5%] z-[-1] w-[4px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-800 ease-in-out group-hover:left-[70%] group-hover:top-[-30%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+              <Star />
+            </div>
           </button>
           <UserMenu />
         </div>

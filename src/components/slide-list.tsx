@@ -62,10 +62,13 @@ function SortableSlideItem({
       onClick={onSelect}
       className={`group relative cursor-pointer rounded-lg border p-2.5 transition-all duration-150 ${
         isActive
-          ? "border-emerald-500/30 bg-emerald-500/[0.04] shadow-[0_0_8px_-4px_rgba(52,211,153,0.15)]"
+          ? "border-emerald-500/50 bg-emerald-500/[0.08] shadow-[0_0_16px_-4px_rgba(52,211,153,0.25),inset_0_0_0_1px_rgba(52,211,153,0.1)]"
           : "border-[--border] bg-white/[0.02] hover:border-[--border-bright] hover:bg-white/[0.04]"
       }`}
     >
+      {isActive && (
+        <div className="absolute left-0 top-[15%] h-[70%] w-[2px] rounded-full bg-emerald-400" />
+      )}
       <div className="flex items-center gap-2">
         <span
           {...attributes}
