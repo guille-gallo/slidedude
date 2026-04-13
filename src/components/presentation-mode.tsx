@@ -24,8 +24,6 @@ export function PresentationMode({
 
   const currentSlide = slides[currentIndex];
 
-  const animating = useRef(false);
-
   // Fullscreen API
   useEffect(() => {
     document.documentElement.requestFullscreen?.().catch(() => {});
@@ -48,12 +46,10 @@ export function PresentationMode({
   }, [onExit]);
 
   const next = useCallback(() => {
-    if (animating.current) return;
     setCurrentIndex((i) => Math.min(i + 1, slides.length - 1));
   }, [slides.length]);
 
   const prev = useCallback(() => {
-    if (animating.current) return;
     setCurrentIndex((i) => Math.max(i - 1, 0));
   }, []);
 
@@ -113,8 +109,6 @@ export function PresentationMode({
                       lineNumbers: false,
                       animateContainer: true,
                     }}
-                    onStart={() => { animating.current = true; }}
-                    onEnd={() => { animating.current = false; }}
                     className="magic-move-code"
                   />
                 ) : (
