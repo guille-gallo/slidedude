@@ -127,4 +127,105 @@ describe("isValidPresentations", () => {
       ]),
     ).toBe(false);
   });
+
+  it("rejects if more than 50 presentations", () => {
+    const many = Array.from({ length: 51 }, (_, i) => ({
+      id: String(i),
+      name: `P${i}`,
+      slides: [],
+      activeSlideIndex: 0,
+    }));
+    expect(isValidPresentations(many)).toBe(false);
+  });
+});
+
+describe("bounds checking", () => {
+  it("rejects slide with id longer than 100 chars", () => {
+    expect(
+      isValidSlide({
+        id: "x".repeat(101),
+        type: "code",
+        title: "T",
+        code: "x",
+        language: "ts",
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects slide with title longer than 500 chars", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "code",
+        title: "x".repeat(501),
+        code: "x",
+        language: "ts",
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects content slide with fontSize out of range (too small)", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 4,
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects content slide with fontSize out of range (too large)", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 300,
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects code slide with language longer than 50 chars", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "code",
+        title: "T",
+        code: "x",
+        language: "x".repeat(51),
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects presentation with negative activeSlideIndex", () => {
+    expect(
+      isValidPresentation({
+        id: "1",
+        name: "T",
+        slides: [],
+        activeSlideIndex: -1,
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects presentation with more than 200 slides", () => {
+    const slides = Array.from({ length: 201 }, (_, i) => ({
+      id: String(i),
+      type: "code",
+      title: "T",
+      code: "x",
+      language: "ts",
+    }));
+    expect(
+      isValidPresentation({
+        id: "1",
+        name: "T",
+        slides,
+        activeSlideIndex: 0,
+      }),
+    ).toBe(false);
+  });
 });

@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the env before importing
 vi.stubEnv("ALLOWED_EMAILS", "alice@example.com, BOB@example.com , charlie@test.io");
+vi.stubEnv("KV_REST_API_URL", "https://fake.upstash.io");
+vi.stubEnv("KV_REST_API_TOKEN", "fake-token");
+vi.stubEnv("AUTH_SECRET", "test-secret");
 
 // Hoist mocks to top level to avoid warnings
 vi.mock("@/lib/redis", () => ({ redis: {} }));
