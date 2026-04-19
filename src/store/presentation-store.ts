@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, type PersistStorage, type StorageValue } from "zustand/middleware";
 import type { Presentation, Slide, CodeSlide, ContentSlide } from "@/types";
 import { generateId } from "@/utils/id";
+import { SAVE_DEBOUNCE_MS } from "@/lib/constants";
 
 function createDefaultCodeSlide(): CodeSlide {
   return {
@@ -44,7 +45,7 @@ function scheduleSave() {
   saveTimer = setTimeout(() => {
     const state = usePresentationStore.getState();
     state.saveToServer();
-  }, 4000);
+  }, SAVE_DEBOUNCE_MS);
 }
 
 // --- Safe localStorage wrapper ---

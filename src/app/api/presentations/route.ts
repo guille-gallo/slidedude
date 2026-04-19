@@ -1,21 +1,6 @@
 import { auth } from "@/auth";
 import { getPresentations, savePresentations } from "@/lib/data";
-import type { Presentation } from "@/types";
-
-function isValidPresentations(data: unknown): data is Presentation[] {
-  return (
-    Array.isArray(data) &&
-    data.every(
-      (p) =>
-        p &&
-        typeof p === "object" &&
-        typeof p.id === "string" &&
-        typeof p.name === "string" &&
-        Array.isArray(p.slides) &&
-        typeof p.activeSlideIndex === "number",
-    )
-  );
-}
+import { isValidPresentations } from "@/lib/validation";
 
 export async function GET() {
   const session = await auth();

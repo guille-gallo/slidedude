@@ -1,24 +1,10 @@
 import "server-only";
 import { redis } from "@/lib/redis";
+import { isValidPresentations } from "@/lib/validation";
 import type { Presentation } from "@/types";
 
 function redisKey(userId: string) {
   return `presentations:${userId}`;
-}
-
-function isValidPresentation(p: unknown): p is Presentation {
-  if (!p || typeof p !== "object") return false;
-  const obj = p as Record<string, unknown>;
-  return (
-    typeof obj.id === "string" &&
-    typeof obj.name === "string" &&
-    Array.isArray(obj.slides) &&
-    typeof obj.activeSlideIndex === "number"
-  );
-}
-
-function isValidPresentations(data: unknown): data is Presentation[] {
-  return Array.isArray(data) && data.every(isValidPresentation);
 }
 
 export async function getPresentations(

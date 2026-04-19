@@ -1,5 +1,4 @@
-const MAX_WIDTH = 1920;
-const QUALITY = 0.8;
+import { MAX_IMAGE_WIDTH, COMPRESSION_QUALITY } from "@/lib/constants";
 
 export function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -10,9 +9,9 @@ export function compressImage(file: File): Promise<string> {
       URL.revokeObjectURL(url);
 
       let { width, height } = img;
-      if (width > MAX_WIDTH) {
-        height = Math.round((height * MAX_WIDTH) / width);
-        width = MAX_WIDTH;
+      if (width > MAX_IMAGE_WIDTH) {
+        height = Math.round((height * MAX_IMAGE_WIDTH) / width);
+        width = MAX_IMAGE_WIDTH;
       }
 
       const canvas = document.createElement("canvas");
@@ -26,7 +25,7 @@ export function compressImage(file: File): Promise<string> {
       }
 
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL("image/webp", QUALITY));
+      resolve(canvas.toDataURL("image/webp", COMPRESSION_QUALITY));
     };
 
     img.onerror = () => {
@@ -44,9 +43,9 @@ export function compressImageFromDataUrl(dataUrl: string): Promise<string> {
 
     img.onload = () => {
       let { width, height } = img;
-      if (width > MAX_WIDTH) {
-        height = Math.round((height * MAX_WIDTH) / width);
-        width = MAX_WIDTH;
+      if (width > MAX_IMAGE_WIDTH) {
+        height = Math.round((height * MAX_IMAGE_WIDTH) / width);
+        width = MAX_IMAGE_WIDTH;
       }
 
       const canvas = document.createElement("canvas");
@@ -60,7 +59,7 @@ export function compressImageFromDataUrl(dataUrl: string): Promise<string> {
       }
 
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL("image/webp", QUALITY));
+      resolve(canvas.toDataURL("image/webp", COMPRESSION_QUALITY));
     };
 
     img.onerror = () => reject(new Error("Failed to load image"));

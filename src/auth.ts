@@ -4,15 +4,16 @@ import GitHub from "next-auth/providers/github";
 import Resend from "next-auth/providers/resend";
 import { UpstashRedisAdapter } from "@auth/upstash-redis-adapter";
 import { redis } from "@/lib/redis";
+import { normalizeEmail } from "@/lib/email";
 
 const allowedEmails = (process.env.ALLOWED_EMAILS ?? "")
   .split(",")
-  .map((e) => e.trim().toLowerCase())
+  .map((e) => normalizeEmail(e))
   .filter(Boolean);
 
 export function isEmailAllowed(email: string): boolean {
   if (allowedEmails.length === 0) return true;
-  return allowedEmails.includes(email.trim().toLowerCase());
+  return allowedEmails.includes(normalizeEmail(email));
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -39,7 +40,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const email = profile?.email ?? user?.email;
       if (!email) return false;
       if (allowedEmails.length === 0) return true;
-      return allowedEmails.includes(email.toLowerCase());
+      return allowedEmails.includes(normalizeEmail(email));
     },
     jwt({ token, profile, user }) {
       if (profile) {

@@ -19,6 +19,7 @@ vi.mock("next-auth/providers/resend", () => ({ default: vi.fn(() => ({})) }));
 vi.mock("@auth/upstash-redis-adapter", () => ({
   UpstashRedisAdapter: vi.fn(() => ({})),
 }));
+// Don't mock @/lib/email — we want the real normalizeEmail
 
 let isEmailAllowed: (email: string) => boolean;
 

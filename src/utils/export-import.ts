@@ -1,5 +1,6 @@
 import type { Presentation } from "@/types";
 import { generateId } from "@/utils/id";
+import { isValidSlide } from "@/lib/validation";
 
 export function exportPresentation(presentation: Presentation): void {
   const data = JSON.stringify(presentation, null, 2);
@@ -19,19 +20,6 @@ export function exportPresentation(presentation: Presentation): void {
   URL.revokeObjectURL(url);
 }
 
-function isValidSlide(s: unknown): boolean {
-  if (!s || typeof s !== "object") return false;
-  const slide = s as Record<string, unknown>;
-  if (typeof slide.id !== "string" || typeof slide.title !== "string") return false;
-  if (slide.type === "code") {
-    return typeof slide.code === "string" && typeof slide.language === "string";
-  }
-  if (slide.type === "content") {
-    return typeof slide.body === "string" && typeof slide.fontSize === "number";
-  }
-  return false;
-}
-
 export function importPresentation(json: string): Presentation | null {
   try {
     const data = JSON.parse(json) as Record<string, unknown>;
@@ -45,8 +33,8 @@ export function importPresentation(json: string): Presentation | null {
     }
 
     // Regenerate all IDs to avoid collisions
-    const slides = data.slides.map((s: Record<string, unknown>) => ({
-      ...s,
+    const slides = (data.slides as unknown[]).map((s) => ({
+      ...(s as object),
       id: generateId(),
     }));
 
