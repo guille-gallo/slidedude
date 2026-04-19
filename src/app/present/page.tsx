@@ -77,15 +77,17 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
         if (document.fullscreenElement) {
           document.exitFullscreen?.().catch(() => {});
         }
+      } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.().catch(() => {});
+        } else {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        }
       }
     },
     [next, prev],
   );
-
-  // Enter fullscreen on mount
-  useEffect(() => {
-    document.documentElement.requestFullscreen?.().catch(() => {});
-  }, []);
 
   if (!currentSlide) return null;
 
@@ -170,13 +172,28 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
         <span className="text-sm text-zinc-500">
           {currentIndex + 1} / {slides.length}
         </span>
-        <button
-          onClick={next}
-          disabled={currentIndex === slides.length - 1}
-          className="rounded-md px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-30"
-        >
-          Next →
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (document.fullscreenElement) {
+                document.exitFullscreen?.().catch(() => {});
+              } else {
+                document.documentElement.requestFullscreen?.().catch(() => {});
+              }
+            }}
+            className="rounded-md px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+            title="Toggle fullscreen (F)"
+          >
+            ⛶
+          </button>
+          <button
+            onClick={next}
+            disabled={currentIndex === slides.length - 1}
+            className="rounded-md px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-30"
+          >
+            Next →
+          </button>
+        </div>
       </div>
     </div>
   );
