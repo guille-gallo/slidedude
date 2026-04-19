@@ -17,7 +17,7 @@ export function UserMenu() {
           width={22}
           height={22}
           className="rounded-full ring-1 ring-white/[0.06]"
-          unoptimized
+          loading="eager"
         />
       )}
       <button

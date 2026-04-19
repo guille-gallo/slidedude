@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Fira_Code } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
+import { auth } from "@/auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,11 +42,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html
       lang="en"
@@ -53,7 +56,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="h-full">
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider session={session} refetchOnWindowFocus={false}>
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );
