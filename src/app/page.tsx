@@ -5,7 +5,6 @@ import { usePresentationStore } from "@/store/presentation-store";
 import { SlideList } from "@/components/slide-list";
 import { CodeSlideEditor } from "@/components/code-slide-editor";
 import { ContentSlideEditor } from "@/components/content-slide-editor";
-import { PresentationMode } from "@/components/presentation-mode";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { UserMenu } from "@/components/user-menu";
 import { exportPresentation, importPresentation } from "@/utils/export-import";
@@ -40,7 +39,6 @@ export default function Home() {
   const store = usePresentationStore();
   const presentation = store.getActivePresentation();
   const activeSlide = store.getActiveSlide();
-  const [showPresentation, setShowPresentation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load from server on mount
@@ -51,10 +49,8 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
-  // Keyboard shortcuts (only when NOT in presentation mode)
+  // Keyboard shortcuts
   useEffect(() => {
-    if (showPresentation) return;
-
     function handleKey(e: KeyboardEvent) {
       // Don't trigger shortcuts when typing in inputs
       const tag = (e.target as HTMLElement)?.tagName;
@@ -62,7 +58,7 @@ export default function Home() {
 
       if (e.key === "F5") {
         e.preventDefault();
-        setShowPresentation(true);
+        window.open("/present", "_blank");
       }
       if (e.key === "N" && e.shiftKey && !isInput) {
         e.preventDefault();
@@ -83,7 +79,7 @@ export default function Home() {
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [store, presentation, showPresentation]);
+  }, [store, presentation]);
 
   const handleSlideUpdate = useCallback(
     (patch: Partial<CodeSlide> | Partial<ContentSlide>) => {
@@ -92,10 +88,6 @@ export default function Home() {
     },
     [store, presentation]
   );
-
-  const handleExitPresentation = useCallback(() => {
-    setShowPresentation(false);
-  }, []);
 
   const handleExport = useCallback(() => {
     if (presentation) exportPresentation(presentation);
@@ -133,20 +125,6 @@ export default function Home() {
   }
 
   if (!presentation) return null;
-
-  // When presenting, only render the presentation overlay — don't keep the
-  // editor (with its own ShikiMagicMove instances) mounted in the background.
-  if (showPresentation) {
-    return (
-      <ErrorBoundary>
-        <PresentationMode
-          slides={presentation.slides}
-          initialIndex={presentation.activeSlideIndex}
-          onExit={handleExitPresentation}
-        />
-      </ErrorBoundary>
-    );
-  }
 
   const syncDot =
     store.syncStatus === "saved"
@@ -216,7 +194,7 @@ export default function Home() {
           />
           <span className="mx-1 h-4 w-px bg-[--border-bright]" />
           <button
-            onClick={() => setShowPresentation(true)}
+            onClick={() => window.open("/present", "_blank")}
             className="group relative flex items-center gap-1.5 overflow-visible rounded-md bg-emerald-500 px-4 py-1.5 text-sm font-medium text-black shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:bg-transparent hover:text-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] active:scale-95"
           >
             <PlayIcon className="h-3.5 w-3.5" /> Present

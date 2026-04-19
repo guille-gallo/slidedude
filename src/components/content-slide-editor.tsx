@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { ContentSlide } from "@/types";
 import { compressImage, compressImageFromDataUrl } from "@/utils/compress-image";
 import Image from "next/image";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { UploadCloud, X } from "lucide-react";
+import { UploadCloud, X, StickyNote } from "lucide-react";
 
 interface ContentSlideEditorProps {
   slide: ContentSlide;
@@ -14,6 +14,7 @@ interface ContentSlideEditorProps {
 
 export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showNotes, setShowNotes] = useState(false);
 
   const handleImageFile = useCallback(
     async (file: File) => {
@@ -135,6 +136,28 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
               if (file) handleImageFile(file);
             }}
           />
+        </div>
+        {/* Notes toggle */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowNotes(!showNotes)}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs transition-colors ${
+              showNotes ? "bg-emerald-500/10 text-emerald-400" : "text-zinc-600 hover:text-zinc-400"
+            }`}
+          >
+            <StickyNote className="h-3.5 w-3.5" />
+            Presenter Notes
+          </button>
+          {showNotes && (
+            <textarea
+              value={slide.notes ?? ""}
+              onChange={(e) => onChange({ notes: e.target.value || undefined })}
+              className="input-glow mt-2 w-full resize-none rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
+              rows={3}
+              placeholder="Speaker notes (visible only to you during presentation)…"
+            />
+          )}
         </div>
       </Panel>
 

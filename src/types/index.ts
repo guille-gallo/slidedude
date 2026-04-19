@@ -4,6 +4,7 @@ export interface CodeSlide {
   title: string;
   code: string;
   language: string;
+  notes?: string;
 }
 
 export interface ContentSlide {
@@ -13,6 +14,7 @@ export interface ContentSlide {
   body: string;
   imageDataUrl: string | null;
   fontSize: number;
+  notes?: string;
 }
 
 export type Slide = CodeSlide | ContentSlide;

@@ -2,50 +2,53 @@
 
 import { useEffect, useCallback, useState, useRef } from "react";
 import type { Slide } from "@/types";
+import { usePresentationStore } from "@/store/presentation-store";
 import { useHighlighter } from "@/hooks/use-highlighter";
 import { ShikiMagicMove } from "shiki-magic-move/react";
 import "shiki-magic-move/dist/style.css";
 import Image from "next/image";
 
-interface PresentationModeProps {
-  slides: Slide[];
-  initialIndex: number;
-  onExit: () => void;
+function useHydration() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    if (usePresentationStore.persist.hasHydrated()) {
+      setHydrated(true);
+    } else {
+      return usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
+    }
+  }, []);
+  return hydrated;
 }
 
-export function PresentationMode({
-  slides,
-  initialIndex,
-  onExit,
-}: PresentationModeProps) {
+function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIndex: number }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const containerRef = useRef<HTMLDivElement>(null);
   const highlighter = useHighlighter();
+  const animating = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
 
   const currentSlide = slides[currentIndex];
 
-  const animating = useRef(false);
-
-  // Fullscreen API
+  // BroadcastChannel — send index to presenter notes window
   useEffect(() => {
-    document.documentElement.requestFullscreen?.().catch(() => {});
-    return () => {
-      if (document.fullscreenElement) {
-        document.exitFullscreen?.().catch(() => {});
-      }
-    };
+    channelRef.current = new BroadcastChannel("slidedude-presenter");
+    return () => channelRef.current?.close();
   }, []);
 
-  // Sync exit via browser fullscreen (e.g. Esc handled by browser)
   useEffect(() => {
-    function handleFullscreenChange() {
-      if (!document.fullscreenElement) {
-        onExit();
+    channelRef.current?.postMessage({ type: "slide-change", index: currentIndex });
+  }, [currentIndex]);
+
+  // Listen for commands from editor tab
+  useEffect(() => {
+    const channel = new BroadcastChannel("slidedude-control");
+    channel.onmessage = (e) => {
+      if (e.data?.type === "go-to-slide" && typeof e.data.index === "number") {
+        setCurrentIndex(e.data.index);
       }
-    }
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [onExit]);
+    };
+    return () => channel.close();
+  }, []);
 
   const next = useCallback(() => {
     if (animating.current) return;
@@ -71,16 +74,18 @@ export function PresentationMode({
         prev();
       } else if (e.key === "Escape" || e.key === "F5") {
         e.preventDefault();
-        // Exit fullscreen first, which will trigger onExit via fullscreenchange
         if (document.fullscreenElement) {
-          document.exitFullscreen?.().catch(() => onExit());
-        } else {
-          onExit();
+          document.exitFullscreen?.().catch(() => {});
         }
       }
     },
-    [next, prev, onExit],
+    [next, prev],
   );
+
+  // Enter fullscreen on mount
+  useEffect(() => {
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  }, []);
 
   if (!currentSlide) return null;
 
@@ -89,7 +94,7 @@ export function PresentationMode({
       ref={containerRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className="fixed inset-0 z-50 flex flex-col bg-[#000] outline-none"
+      className="flex h-screen flex-col bg-[#000] outline-none"
     >
       <div className="flex flex-1 min-h-0 items-center justify-center overflow-hidden p-8">
         <div className="flex w-full max-w-5xl flex-col items-center gap-6 min-h-0 max-h-full">
@@ -174,5 +179,28 @@ export function PresentationMode({
         </button>
       </div>
     </div>
+  );
+}
+
+export default function PresentPage() {
+  const hydrated = useHydration();
+  const presentation = usePresentationStore((s) => {
+    const id = s.activePresentationId;
+    return s.presentations.find((p) => p.id === id);
+  });
+
+  if (!hydrated || !presentation) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#000] text-zinc-500">
+        Loading…
+      </div>
+    );
+  }
+
+  return (
+    <PresentationView
+      slides={presentation.slides}
+      initialIndex={presentation.activeSlideIndex}
+    />
   );
 }
