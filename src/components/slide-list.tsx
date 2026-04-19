@@ -60,6 +60,10 @@ function SortableSlideItem({
       ref={setNodeRef}
       style={style}
       onClick={onSelect}
+      role="option"
+      aria-selected={isActive}
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
       className={`group relative cursor-pointer rounded-lg border p-2.5 transition-all duration-150 ${
         isActive
           ? "border-emerald-500/50 bg-emerald-500/[0.08] shadow-[0_0_16px_-4px_rgba(52,211,153,0.25),inset_0_0_0_1px_rgba(52,211,153,0.1)]"
@@ -75,6 +79,7 @@ function SortableSlideItem({
           {...listeners}
           className="cursor-grab touch-none text-zinc-600 transition-colors hover:text-zinc-400"
           onClick={(e) => e.stopPropagation()}
+          aria-label={`Reorder slide ${index + 1}`}
         >
           <GripVertical className="h-3 w-3" />
         </span>
@@ -100,6 +105,7 @@ function SortableSlideItem({
           }}
           className="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
           title="Duplicate slide"
+          aria-label={`Duplicate slide ${index + 1}`}
         >
           <Copy className="h-3 w-3" />
         </button>
@@ -110,6 +116,7 @@ function SortableSlideItem({
           }}
           className="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-red-500/10 hover:text-red-400"
           title="Remove slide"
+          aria-label={`Delete slide ${index + 1}`}
         >
           <Trash2 className="h-3 w-3" />
         </button>
@@ -155,7 +162,7 @@ export function SlideList({
       <div className="flex-1 overflow-y-auto px-2">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={slideIds} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1" role="listbox" aria-label="Slides">
               {slides.map((slide, index) => (
                 <SortableSlideItem
                   key={slide.id}
@@ -175,12 +182,14 @@ export function SlideList({
       <div className="flex gap-1.5 border-t border-[--border] p-2.5">
         <button
           onClick={() => onAddSlide("code")}
+          aria-label="Add code slide"
           className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2 py-2 text-[11px] font-medium text-zinc-400 transition-all hover:border-emerald-500/30 hover:bg-white/[0.04] hover:text-emerald-400"
         >
           <Code2 className="h-3.5 w-3.5" /> Code
         </button>
         <button
           onClick={() => onAddSlide("content")}
+          aria-label="Add content slide"
           className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2 py-2 text-[11px] font-medium text-zinc-400 transition-all hover:border-violet-500/30 hover:bg-white/[0.04] hover:text-violet-400"
         >
           <Type className="h-3.5 w-3.5" /> Content

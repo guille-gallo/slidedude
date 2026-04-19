@@ -23,8 +23,13 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const presentations = await getPresentations(session.user.email);
-  return Response.json({ presentations });
+  try {
+    const presentations = await getPresentations(session.user.email);
+    return Response.json({ presentations });
+  } catch (e) {
+    console.error("Failed to fetch presentations:", e);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function PUT(request: Request) {
@@ -46,6 +51,11 @@ export async function PUT(request: Request) {
     return Response.json({ error: "Invalid data" }, { status: 400 });
   }
 
-  await savePresentations(session.user.email, presentations);
-  return Response.json({ ok: true });
+  try {
+    await savePresentations(session.user.email, presentations);
+    return Response.json({ ok: true });
+  } catch (e) {
+    console.error("Failed to save presentations:", e);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

@@ -146,8 +146,15 @@ export default function Home() {
 
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
+      <a
+        href="#main-editor"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:rounded-md focus:bg-emerald-500 focus:px-4 focus:py-2 focus:text-black"
+      >
+        Skip to editor
+      </a>
+
       {store.storageWarning && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-center text-xs font-medium text-amber-400">
+        <div role="alert" className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-center text-xs font-medium text-amber-400">
           Local storage is full. Your data is synced to the cloud, but local backup may be incomplete.
         </div>
       )}
@@ -161,11 +168,12 @@ export default function Home() {
             type="text"
             value={presentation.name}
             onChange={(e) => store.renamePresentation(presentation.id, e.target.value)}
+            aria-label="Presentation name"
             className="input-glow rounded-md border border-transparent bg-transparent px-2 py-0.5 text-sm text-zinc-400 outline-none transition-all hover:border-[--border-bright] focus:border-[--accent]"
           />
           {syncLabel && (
-            <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-              <span className={`inline-block h-1.5 w-1.5 rounded-full ${syncDot}`} />
+            <span role="status" aria-live="polite" className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${syncDot}`} aria-hidden="true" />
               {syncLabel}
             </span>
           )}
@@ -191,6 +199,7 @@ export default function Home() {
             accept=".json"
             onChange={handleFileChange}
             className="hidden"
+            aria-label="Import presentation file"
           />
           <span className="mx-1 h-4 w-px bg-[--border-bright]" />
           <button
@@ -231,7 +240,7 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden">
         <PanelGroup direction="horizontal" className="h-full w-full">
           {/* Sidebar Panel */}
-          <Panel defaultSize={18} minSize={14} maxSize={28} className="flex h-full flex-col border-r border-[--border] bg-[--sidebar]">
+          <Panel defaultSize={18} minSize={14} maxSize={28} className="flex h-full flex-col border-r border-[--border] bg-[--sidebar]" role="complementary" aria-label="Slide list">
             <SlideList
               slides={presentation.slides}
               activeIndex={presentation.activeSlideIndex}
@@ -247,7 +256,7 @@ export default function Home() {
 
           {/* Editor Panel */}
           <Panel defaultSize={82} minSize={40} className="flex h-full flex-col bg-[--surface]">
-            <main className="flex-1 overflow-auto p-5">
+            <main id="main-editor" className="flex-1 overflow-auto p-5">
               <ErrorBoundary>
                 {activeSlide?.type === "code" && (
                   <CodeSlideEditor

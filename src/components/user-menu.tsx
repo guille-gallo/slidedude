@@ -13,7 +13,7 @@ export function UserMenu() {
       {session.user.image && (
         <Image
           src={session.user.image}
-          alt=""
+          alt={`${session.user.name || "User"} avatar`}
           width={22}
           height={22}
           className="rounded-full ring-1 ring-white/[0.06]"

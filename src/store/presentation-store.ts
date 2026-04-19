@@ -320,16 +320,33 @@ export const usePresentationStore = create<PresentationState>()(
         saveToServer: async () => {
           const { presentations } = get();
           set({ syncStatus: "saving" });
-          try {
-            const res = await fetch("/api/presentations", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ presentations }),
-            });
-            set({ syncStatus: res.ok ? "saved" : "error" });
-          } catch {
-            set({ syncStatus: "error" });
+
+          const MAX_RETRIES = 3;
+          for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            try {
+              const res = await fetch("/api/presentations", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ presentations }),
+              });
+              if (res.ok) {
+                set({ syncStatus: "saved" });
+                return;
+              }
+              // 4xx errors are not retryable
+              if (res.status >= 400 && res.status < 500) {
+                set({ syncStatus: "error" });
+                return;
+              }
+            } catch {
+              // Network error — retry
+            }
+            // Exponential backoff: 1s, 2s, 4s
+            if (attempt < MAX_RETRIES - 1) {
+              await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+            }
           }
+          set({ syncStatus: "error" });
         },
       };
     },
