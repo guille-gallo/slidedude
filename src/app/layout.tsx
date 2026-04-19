@@ -21,7 +21,24 @@ const firaCode = Fira_Code({
 
 export const metadata: Metadata = {
   title: "slidedude — Animated Code Presentations",
-  description: "Create beautiful, animated code presentations with Shiki Magic Move",
+  description:
+    "Create beautiful, animated code presentations with Shiki Magic Move",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_URL ?? "https://slidedude.io",
+  ),
+  openGraph: {
+    title: "slidedude — Animated Code Presentations",
+    description:
+      "Create beautiful, animated code presentations with Shiki Magic Move",
+    siteName: "slidedude",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "slidedude — Animated Code Presentations",
+    description:
+      "Create beautiful, animated code presentations with Shiki Magic Move",
+  },
 };
 
 export default function RootLayout({
