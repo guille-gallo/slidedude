@@ -1,13 +1,6 @@
 import "server-only";
-import { Redis } from "@upstash/redis";
+import { redis } from "@/lib/redis";
 import type { Presentation } from "@/types";
-
-function getRedis() {
-  return new Redis({
-    url: process.env.KV_REST_API_URL!,
-    token: process.env.KV_REST_API_TOKEN!,
-  });
-}
 
 function redisKey(userId: string) {
   return `presentations:${userId}`;
@@ -31,7 +24,6 @@ function isValidPresentations(data: unknown): data is Presentation[] {
 export async function getPresentations(
   userId: string,
 ): Promise<Presentation[] | null> {
-  const redis = getRedis();
   const data = await redis.get<Presentation[]>(redisKey(userId));
 
   if (data === null) return null;
@@ -50,6 +42,5 @@ export async function savePresentations(
   if (!isValidPresentations(presentations)) {
     throw new Error("Invalid presentations data");
   }
-  const redis = getRedis();
   await redis.set(redisKey(userId), presentations);
 }

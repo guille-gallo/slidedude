@@ -44,7 +44,7 @@ function scheduleSave() {
   saveTimer = setTimeout(() => {
     const state = usePresentationStore.getState();
     state.saveToServer();
-  }, 2000);
+  }, 4000);
 }
 
 // --- Safe localStorage wrapper ---
