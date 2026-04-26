@@ -42,6 +42,14 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
           className="input-glow flex-1 rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
         />
 
+        <input
+          type="text"
+          value={slide.section ?? ""}
+          onChange={(e) => onChange({ section: e.target.value || undefined })}
+          placeholder="Section"
+          className="input-glow w-32 rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2 text-xs text-zinc-400 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
+        />
+
         <div className="relative">
           <Code2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
           <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />

@@ -18,14 +18,14 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Slide } from "@/types";
-import { GripVertical, Copy, Trash2, Code2, Type } from "lucide-react";
+import { GripVertical, Copy, Trash2, Code2, Type, Workflow } from "lucide-react";
 
 interface SlideListProps {
   slides: Slide[];
   activeIndex: number;
   onSelect: (index: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
-  onAddSlide: (type: "code" | "content") => void;
+  onAddSlide: (type: "code" | "content" | "mermaid") => void;
   onRemoveSlide: (index: number) => void;
   onDuplicateSlide: (index: number) => void;
 }
@@ -88,14 +88,21 @@ function SortableSlideItem({
           className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
             slide.type === "code"
               ? "bg-emerald-500/10 text-emerald-500"
-              : "bg-violet-500/10 text-violet-400"
+              : slide.type === "mermaid"
+                ? "bg-sky-500/10 text-sky-400"
+                : "bg-violet-500/10 text-violet-400"
           }`}
         >
-          {slide.type}
+          {slide.type === "mermaid" ? "diagram" : slide.type}
         </span>
       </div>
+      {slide.section && (
+        <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-wider text-zinc-600">
+          · {slide.section}
+        </p>
+      )}
       <p className="mt-1.5 truncate text-xs text-zinc-500">
-        {slide.title || (slide.type === "code" ? slide.code.slice(0, 40) : "Untitled")}
+        {slide.title || (slide.type === "code" ? slide.code.slice(0, 40) : slide.type === "mermaid" ? slide.source.split("\n")[0]?.slice(0, 40) : "Untitled")}
       </p>
       <div className="absolute right-1 top-1 hidden items-center gap-0.5 group-hover:flex">
         <button
@@ -193,6 +200,13 @@ export function SlideList({
           className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2 py-2 text-[11px] font-medium text-zinc-400 transition-all hover:border-violet-500/30 hover:bg-white/[0.04] hover:text-violet-400"
         >
           <Type className="h-3.5 w-3.5" /> Content
+        </button>
+        <button
+          onClick={() => onAddSlide("mermaid")}
+          aria-label="Add diagram slide"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2 py-2 text-[11px] font-medium text-zinc-400 transition-all hover:border-sky-500/30 hover:bg-white/[0.04] hover:text-sky-400"
+        >
+          <Workflow className="h-3.5 w-3.5" /> Diagram
         </button>
       </div>
     </div>

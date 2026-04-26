@@ -73,6 +73,14 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
           className="input-glow rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2 font-semibold text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
         />
 
+        <input
+          type="text"
+          value={slide.section ?? ""}
+          onChange={(e) => onChange({ section: e.target.value || undefined })}
+          placeholder="Section (optional)"
+          className="input-glow rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2 text-xs text-zinc-400 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
+        />
+
         <div className="flex items-center gap-3 rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2.5">
           <label className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Size</label>
           <input

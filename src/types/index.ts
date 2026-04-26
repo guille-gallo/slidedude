@@ -5,6 +5,7 @@ export interface CodeSlide {
   code: string;
   language: string;
   notes?: string;
+  section?: string;
 }
 
 export interface ContentSlide {
@@ -15,9 +16,19 @@ export interface ContentSlide {
   imageDataUrl: string | null;
   fontSize: number;
   notes?: string;
+  section?: string;
 }
 
-export type Slide = CodeSlide | ContentSlide;
+export interface MermaidSlide {
+  id: string;
+  type: "mermaid";
+  title: string;
+  source: string;
+  notes?: string;
+  section?: string;
+}
+
+export type Slide = CodeSlide | ContentSlide | MermaidSlide;
 
 export interface Presentation {
   id: string;

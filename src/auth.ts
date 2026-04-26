@@ -34,20 +34,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       from: process.env.AUTH_EMAIL_FROM ?? "slidedude <noreply@slidedude.io>",
     }),
   ],
-  debug: true,
-  logger: {
-    error(error) {
-      console.error("[next-auth][error]", {
-        name: error?.name,
-        message: error?.message,
-        cause: (error as { cause?: unknown })?.cause,
-        stack: error?.stack,
-      });
-    },
-    warn(code) {
-      console.warn("[next-auth][warn]", code);
-    },
-  },
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   callbacks: {

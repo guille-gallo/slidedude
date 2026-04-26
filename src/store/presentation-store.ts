@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import { persist, type PersistStorage, type StorageValue } from "zustand/middleware";
-import type { Presentation, Slide, CodeSlide, ContentSlide } from "@/types";
+import type { Presentation, Slide, CodeSlide, ContentSlide, MermaidSlide } from "@/types";
 import { generateId } from "@/utils/id";
 import { SAVE_DEBOUNCE_MS } from "@/lib/constants";
+
+export type SlideType = Slide["type"];
 
 function createDefaultCodeSlide(): CodeSlide {
   return {
@@ -23,6 +25,21 @@ function createDefaultContentSlide(): ContentSlide {
     imageDataUrl: null,
     fontSize: 32,
   };
+}
+
+function createDefaultMermaidSlide(): MermaidSlide {
+  return {
+    id: generateId(),
+    type: "mermaid",
+    title: "Diagram",
+    source: "flowchart TB\n  A[Domain] --> B[Application]\n  B --> C[Adapters]\n  C --> D[Frameworks]",
+  };
+}
+
+function createDefaultSlide(type: SlideType): Slide {
+  if (type === "code") return createDefaultCodeSlide();
+  if (type === "content") return createDefaultContentSlide();
+  return createDefaultMermaidSlide();
 }
 
 function createDefaultPresentation(): Presentation {
@@ -99,9 +116,9 @@ interface PresentationState {
   importPresentation: (presentation: Presentation) => void;
 
   // Slide actions
-  addSlide: (type: "code" | "content") => void;
+  addSlide: (type: SlideType) => void;
   removeSlide: (index: number) => void;
-  updateSlide: (index: number, patch: Partial<CodeSlide> | Partial<ContentSlide>) => void;
+  updateSlide: (index: number, patch: Partial<CodeSlide> | Partial<ContentSlide> | Partial<MermaidSlide>) => void;
   setActiveSlideIndex: (index: number) => void;
   reorderSlide: (fromIndex: number, toIndex: number) => void;
   duplicateSlide: (index: number) => void;
@@ -191,8 +208,7 @@ export const usePresentationStore = create<PresentationState>()(
         },
 
         addSlide: (type) => {
-          const slide: Slide =
-            type === "code" ? createDefaultCodeSlide() : createDefaultContentSlide();
+          const slide: Slide = createDefaultSlide(type);
 
           set((s) => ({
             presentations: s.presentations.map((p) => {

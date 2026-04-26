@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { usePresentationStore } from "@/store/presentation-store";
+import { findSection } from "@/lib/sections";
 
 function useHydration() {
   const [hydrated, setHydrated] = useState(false);
@@ -23,14 +24,17 @@ export default function PresenterPage() {
   });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+  const [audienceBlackout, setAudienceBlackout] = useState(false);
   const startTime = useRef(Date.now());
 
-  // Listen to BroadcastChannel for slide changes
+  // Listen to BroadcastChannel for slide changes + audience blackout state
   useEffect(() => {
     const channel = new BroadcastChannel("slidedude-presenter");
     channel.onmessage = (e) => {
       if (e.data?.type === "slide-change" && typeof e.data.index === "number") {
         setCurrentIndex(e.data.index);
+      } else if (e.data?.type === "blackout" && typeof e.data.on === "boolean") {
+        setAudienceBlackout(e.data.on);
       }
     };
     return () => channel.close();
@@ -44,6 +48,12 @@ export default function PresenterPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const slides = presentation?.slides ?? [];
+  const sectionInfo = useMemo(
+    () => (presentation ? findSection(slides, currentIndex) : null),
+    [presentation, slides, currentIndex],
+  );
+
   if (!hydrated || !presentation) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#050505] text-zinc-500">
@@ -52,13 +62,15 @@ export default function PresenterPage() {
     );
   }
 
-  const slides = presentation.slides;
   const currentSlide = slides[currentIndex];
   const nextSlide = slides[currentIndex + 1];
 
   const minutes = Math.floor(elapsed / 60);
   const seconds = elapsed % 60;
   const timeStr = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+  const slideTypeLabel = (t: string) =>
+    t === "code" ? "Code slide" : t === "mermaid" ? "Diagram slide" : "Content slide";
 
   return (
     <div className="flex h-screen flex-col bg-[#050505] text-zinc-300">
@@ -68,6 +80,19 @@ export default function PresenterPage() {
           slidedude<span className="text-emerald-400">_</span> presenter
         </h1>
         <div className="flex items-center gap-6">
+          {audienceBlackout && (
+            <span className="rounded-md bg-red-500/15 px-2 py-1 text-xs font-semibold uppercase tracking-widest text-red-400">
+              Audience: blackout
+            </span>
+          )}
+          {sectionInfo?.section.name && (
+            <span className="font-mono text-xs uppercase tracking-[0.3em] text-zinc-500">
+              {sectionInfo.section.name}
+              <span className="ml-2 text-zinc-700">
+                {sectionInfo.indexInSection + 1} / {sectionInfo.section.size}
+              </span>
+            </span>
+          )}
           <span className="font-mono text-3xl tabular-nums text-zinc-400">{timeStr}</span>
           <span className="rounded-md bg-white/[0.04] px-3 py-1 text-sm text-zinc-500">
             {currentIndex + 1} / {slides.length}
@@ -100,8 +125,13 @@ export default function PresenterPage() {
                 {nextSlide.title || "Untitled"}
               </div>
               <div className="mt-1 text-xs text-zinc-600">
-                {nextSlide.type === "code" ? "Code slide" : "Content slide"}
+                {slideTypeLabel(nextSlide.type)}
               </div>
+              {nextSlide.section && (
+                <div className="mt-2 font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+                  {nextSlide.section}
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-sm italic text-zinc-600">End of presentation</div>

@@ -66,6 +66,47 @@ describe("isValidSlide", () => {
   it("rejects unknown type", () => {
     expect(isValidSlide({ id: "1", type: "unknown", title: "T" })).toBe(false);
   });
+
+  it("accepts a valid mermaid slide", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "mermaid",
+        title: "Diagram",
+        source: "flowchart TB\n  A --> B",
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects mermaid slide missing source", () => {
+    expect(isValidSlide({ id: "1", type: "mermaid", title: "T" })).toBe(false);
+  });
+
+  it("accepts an optional section field", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "code",
+        title: "T",
+        code: "x",
+        language: "ts",
+        section: "Context",
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects non-string section", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "code",
+        title: "T",
+        code: "x",
+        language: "ts",
+        section: 42,
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("isValidPresentation", () => {

@@ -5,12 +5,13 @@ import { usePresentationStore } from "@/store/presentation-store";
 import { SlideList } from "@/components/slide-list";
 import { CodeSlideEditor } from "@/components/code-slide-editor";
 import { ContentSlideEditor } from "@/components/content-slide-editor";
+import { MermaidSlideEditor } from "@/components/mermaid-slide-editor";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { UserMenu } from "@/components/user-menu";
 import { exportPresentation, importPresentation } from "@/utils/export-import";
-import type { CodeSlide, ContentSlide } from "@/types";
+import type { CodeSlide, ContentSlide, MermaidSlide } from "@/types";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Download, Upload, PlayIcon } from "lucide-react";
+import { Download, Upload, PlayIcon, Printer } from "lucide-react";
 
 function Star() {
   return (
@@ -64,6 +65,10 @@ export default function Home() {
         e.preventDefault();
         store.addSlide("code");
       }
+      if (e.key === "M" && e.shiftKey && !isInput) {
+        e.preventDefault();
+        store.addSlide("mermaid");
+      }
       if (e.key === "d" && (e.ctrlKey || e.metaKey) && !isInput) {
         e.preventDefault();
         if (presentation) {
@@ -82,7 +87,7 @@ export default function Home() {
   }, [store, presentation]);
 
   const handleSlideUpdate = useCallback(
-    (patch: Partial<CodeSlide> | Partial<ContentSlide>) => {
+    (patch: Partial<CodeSlide> | Partial<ContentSlide> | Partial<MermaidSlide>) => {
       if (!presentation) return;
       store.updateSlide(presentation.activeSlideIndex, patch);
     },
@@ -193,6 +198,13 @@ export default function Home() {
           >
             <Upload className="h-3.5 w-3.5" /> Import
           </button>
+          <button
+            onClick={() => window.open("/present?print=1", "_blank")}
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
+            title="Print to PDF"
+          >
+            <Printer className="h-3.5 w-3.5" /> PDF
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -266,6 +278,12 @@ export default function Home() {
                 )}
                 {activeSlide?.type === "content" && (
                   <ContentSlideEditor
+                    slide={activeSlide}
+                    onChange={handleSlideUpdate}
+                  />
+                )}
+                {activeSlide?.type === "mermaid" && (
+                  <MermaidSlideEditor
                     slide={activeSlide}
                     onChange={handleSlideUpdate}
                   />

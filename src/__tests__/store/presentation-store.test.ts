@@ -69,6 +69,17 @@ describe("presentation store", () => {
       expect(pres.slides).toHaveLength(2);
       expect(pres.slides[1].type).toBe("content");
     });
+
+    it("adds a mermaid slide with a default source", () => {
+      usePresentationStore.getState().addSlide("mermaid");
+      const pres = usePresentationStore.getState().getActivePresentation()!;
+      expect(pres.slides).toHaveLength(2);
+      const slide = pres.slides[1];
+      expect(slide.type).toBe("mermaid");
+      if (slide.type === "mermaid") {
+        expect(slide.source.length).toBeGreaterThan(0);
+      }
+    });
   });
 
   describe("removeSlide", () => {

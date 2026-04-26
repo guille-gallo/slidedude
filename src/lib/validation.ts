@@ -12,6 +12,8 @@ export function isValidSlide(s: unknown): s is Slide {
   if (!s || typeof s !== "object") return false;
   const slide = s as Record<string, unknown>;
   if (!isValidString(slide.id, 100) || !isValidString(slide.title, 500)) return false;
+  // Optional `section` (free-text grouping label)
+  if (slide.section !== undefined && !isValidString(slide.section, 200)) return false;
   if (slide.type === "code") {
     return isValidString(slide.code) && isValidString(slide.language, 50);
   }
@@ -22,6 +24,9 @@ export function isValidSlide(s: unknown): s is Slide {
       slide.fontSize >= 8 &&
       slide.fontSize <= 200
     );
+  }
+  if (slide.type === "mermaid") {
+    return isValidString(slide.source);
   }
   return false;
 }
