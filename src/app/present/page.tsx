@@ -8,6 +8,7 @@ import { ShikiMagicMove } from "shiki-magic-move/react";
 import "shiki-magic-move/dist/style.css";
 import Image from "next/image";
 import { MermaidDiagram } from "@/components/mermaid-diagram";
+import { ShikiCodeBlock } from "@/components/shiki-code-block";
 import { groupSections, findSection } from "@/lib/sections";
 
 function useHydration() {
@@ -70,6 +71,15 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
   useEffect(() => {
     containerRef.current?.focus();
   }, []);
+
+  // Refocus the container when leaving the overview so arrow-key navigation
+  // continues to work (clicking a thumbnail moves focus to the button, which
+  // is unmounted when overview closes — focus would otherwise fall to <body>).
+  useEffect(() => {
+    if (!overview) {
+      containerRef.current?.focus();
+    }
+  }, [overview]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -373,6 +383,10 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
     [slides],
   );
 
+  const handleMermaidReady = useCallback(() => {
+    setMermaidReady((n) => n + 1);
+  }, []);
+
   useEffect(() => {
     if (printedRef.current) return;
     if (!highlighter) return;
@@ -386,12 +400,25 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
   }, [highlighter, mermaidReady, mermaidSlides]);
 
   return (
-    <div className="bg-white text-black print:bg-white">
+    <div className="bg-black text-zinc-100">
       <style>{`
         @page { size: 1280px 720px; margin: 0; }
-        @media print {
-          html, body { background: white !important; }
+        html, body { background: #000; }
+        /* Force browsers to print background colors and syntax highlighting. */
+        .slide-print, .slide-print * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
+        .slide-print pre.shiki {
+          background: #0d1117 !important;
+          padding: 1.5rem;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          line-height: 1.6;
+          overflow: hidden;
+          margin: 0;
+        }
+        .slide-print pre.shiki code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
       `}</style>
       <div className="mb-2 px-6 py-3 text-xs text-zinc-500 print:hidden">
         Print preview · {name} · {slides.length} slides
@@ -413,9 +440,12 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
           {slide.type === "code" ? (
             <div className="flex w-full max-w-4xl flex-col items-center gap-6">
               {slide.title && <h2 className="text-3xl font-bold">{slide.title}</h2>}
-              <pre className="w-full overflow-hidden rounded-lg bg-[#0d1117] p-6 font-mono text-sm leading-relaxed text-zinc-200">
-                <code>{slide.code}</code>
-              </pre>
+              <ShikiCodeBlock
+                code={slide.code}
+                lang={slide.language}
+                theme="github-dark"
+                className="w-full"
+              />
             </div>
           ) : slide.type === "mermaid" ? (
             <div className="flex w-full max-w-4xl flex-col items-center gap-6">
@@ -424,7 +454,7 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
                 <MermaidDiagram
                   source={slide.source}
                   theme="dark"
-                  onReady={() => setMermaidReady((n) => n + 1)}
+                  onReady={handleMermaidReady}
                   className="h-full w-full"
                 />
               </div>
