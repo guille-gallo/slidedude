@@ -28,9 +28,11 @@ function useHydration() {
   useEffect(() => {
     if (usePresentationStore.persist.hasHydrated()) {
       setHydrated(true);
-    } else {
-      return usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
+      return;
     }
+    const unsub = usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
+    void usePresentationStore.persist.rehydrate();
+    return unsub;
   }, []);
   return hydrated;
 }
@@ -121,14 +123,10 @@ export default function Home() {
     [store]
   );
 
-  if (!hydrated) {
-    return (
-      <div className="flex h-full items-center justify-center text-zinc-500">
-        Loading…
-      </div>
-    );
-  }
-
+  // Render the editor shell optimistically using the store's default state.
+  // Zustand persist will rehydrate from localStorage in an effect and the slide
+  // content will swap in place — this lets LCP fire on the shell instead of
+  // waiting ~2s for hydration. `presentation` is defined from initial state.
   if (!presentation) return null;
 
   const syncDot =

@@ -167,7 +167,7 @@ export function SlideList({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext id="slidedude-slide-list" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={slideIds} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-1" role="listbox" aria-label="Slides">
               {slides.map((slide, index) => (

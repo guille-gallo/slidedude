@@ -15,9 +15,11 @@ function useHydration() {
   useEffect(() => {
     if (usePresentationStore.persist.hasHydrated()) {
       setHydrated(true);
-    } else {
-      return usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
+      return;
     }
+    const unsub = usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
+    void usePresentationStore.persist.rehydrate();
+    return unsub;
   }, []);
   return hydrated;
 }
@@ -163,7 +165,7 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
                   {currentSlide.title}
                 </h1>
               )}
-              <div className="w-full min-h-0 overflow-hidden p-6">
+              <div className="w-full flex-1 min-h-0 overflow-hidden p-6">
                 {highlighter ? (
                   <ShikiMagicMove
                     highlighter={highlighter}

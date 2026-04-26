@@ -9,9 +9,11 @@ function useHydration() {
   useEffect(() => {
     if (usePresentationStore.persist.hasHydrated()) {
       setHydrated(true);
-    } else {
-      return usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
+      return;
     }
+    const unsub = usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
+    void usePresentationStore.persist.rehydrate();
+    return unsub;
   }, []);
   return hydrated;
 }

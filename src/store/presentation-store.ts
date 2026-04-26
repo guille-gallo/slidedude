@@ -370,6 +370,9 @@ export const usePresentationStore = create<PresentationState>()(
     {
       name: "slidedude-presentations",
       storage: safeStorage,
+      // Defer rehydration to a useEffect on the client so SSR and the first
+      // client render produce identical markup (avoiding hydration mismatches).
+      skipHydration: true,
       partialize: (state) => ({
         presentations: state.presentations,
         activePresentationId: state.activePresentationId,
