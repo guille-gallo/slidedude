@@ -29,7 +29,6 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
   const animating = useRef(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
   const [overview, setOverview] = useState(false);
-  const [blackout, setBlackout] = useState(false);
 
   const currentSlide = slides[currentIndex];
   const sections = useMemo(() => groupSections(slides), [slides]);
@@ -44,11 +43,6 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
   useEffect(() => {
     channelRef.current?.postMessage({ type: "slide-change", index: currentIndex });
   }, [currentIndex]);
-
-  // Mirror blackout to the presenter window so the speaker knows the audience sees black.
-  useEffect(() => {
-    channelRef.current?.postMessage({ type: "blackout", on: blackout });
-  }, [blackout]);
 
   // Listen for commands from editor tab
   useEffect(() => {
@@ -77,12 +71,6 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      // Blackout dismisses on any key.
-      if (blackout) {
-        e.preventDefault();
-        setBlackout(false);
-        return;
-      }
       if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault();
         if (overview) return;
@@ -115,12 +103,9 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
       } else if (e.key === "g" || e.key === "G") {
         e.preventDefault();
         setOverview((v) => !v);
-      } else if (e.key === "b" || e.key === "B" || e.key === ".") {
-        e.preventDefault();
-        setBlackout((v) => !v);
       }
     },
-    [next, prev, overview, blackout],
+    [next, prev, overview],
   );
 
   if (!currentSlide) return null;
@@ -337,14 +322,6 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
             ))}
           </div>
         </div>
-      )}
-
-      {/* Blackout — fully opaque overlay; press any key to dismiss */}
-      {blackout && (
-        <div
-          className="absolute inset-0 z-30 bg-black"
-          aria-hidden="true"
-        />
       )}
     </div>
   );

@@ -9,12 +9,16 @@ An animated code presentation tool for creating polished technical talks. Write 
 - **Animated code transitions** — Shiki Magic Move for smooth token-level code morphing between slides
 - **Syntax highlighting** — TypeScript, JavaScript, HTML, CSS, JSON, Python, Markdown, JSX, TSX
 - **Content slides** — Rich text with image support (paste from clipboard or upload, auto-compressed to WebP)
+- **Mermaid diagrams** — Live-preview diagram slides (flowcharts, sequence, class, state, etc.) with transparent backgrounds
+- **Section markers** — Tag slides with sections; presentation mode shows a segmented progress bar and presenter view shows "X of Y in section"
+- **Overview grid** — Press `G` during presentation for a thumbnail grid; click any slide to jump
+- **PDF export** — One-click print view (`?print=1`) waits for Shiki + Mermaid to render before opening the print dialog
 - **Drag & drop** — Reorder slides with keyboard-accessible drag and drop (@dnd-kit)
 - **Cloud sync** — Auto-saves to Upstash Redis (debounced 4s) with localStorage fallback
 - **Multi-provider auth** — Google OAuth, GitHub OAuth, and email magic link (Resend)
 - **Email allowlist** — Restrict access to approved emails via `ALLOWED_EMAILS` env var
 - **Export / Import** — Back up presentations as `.slidedude.json` files (IDs regenerated on import)
-- **Presenter mode** — Separate presenter window with notes, next slide preview, and elapsed timer
+- **Presenter mode** — Separate presenter window with notes, next slide preview, section context, and elapsed timer
 - **Multi-window sync** — BroadcastChannel API keeps editor, presentation, and presenter windows in sync
 - **Error boundaries** — Graceful recovery from runtime errors
 
@@ -26,6 +30,7 @@ An animated code presentation tool for creating polished technical talks. Write 
 |----------|--------|
 | **F5** | Start presentation |
 | **Shift + N** | New code slide |
+| **Shift + M** | New Mermaid diagram slide |
 | **Ctrl/Cmd + D** | Duplicate slide |
 | **Delete** | Remove slide |
 
@@ -35,6 +40,7 @@ An animated code presentation tool for creating polished technical talks. Write 
 |----------|--------|
 | **→** / **Space** | Next slide |
 | **←** | Previous slide |
+| **G** | Toggle overview grid |
 | **F** | Toggle fullscreen |
 | **Esc** / **F5** | Exit fullscreen |
 
@@ -46,10 +52,12 @@ An animated code presentation tool for creating polished technical talks. Write 
 src/
 ├── auth.ts                          # NextAuth config (Google, GitHub, Resend providers)
 ├── proxy.ts                         # Middleware — gates all routes behind auth
-├── types/index.ts                   # Domain types: Slide, Presentation
+├── types/index.ts                   # Domain types: Slide (code|content|mermaid), Presentation
 ├── lib/
 │   ├── redis.ts                     # Upstash Redis singleton client
-│   └── data.ts                      # Server-only persistence (get/save presentations)
+│   ├── data.ts                      # Server-only persistence (get/save presentations)
+│   ├── sections.ts                  # Section grouping helpers
+│   └── validation.ts                # Presentation/slide schema validation
 ├── store/
 │   └── presentation-store.ts        # Zustand store — state, localStorage, cloud sync
 ├── hooks/
@@ -59,11 +67,12 @@ src/
 │   ├── compress-image.ts            # Image → WebP data URL compression
 │   └── export-import.ts             # .slidedude.json export/import
 ├── components/
-│   ├── code-slide-editor.tsx         # Code editor (textarea + syntax overlay)
-│   ├── content-slide-editor.tsx      # Content editor with image upload
-│   ├── slide-list.tsx                # Sidebar with drag-and-drop reordering
+│   ├── code-slide-editor.tsx         # Code editor (textarea + syntax overlay) + section input
+│   ├── content-slide-editor.tsx      # Content editor with image upload + section input
+│   ├── mermaid-slide-editor.tsx      # Split-pane Mermaid source/preview editor
+│   ├── mermaid-diagram.tsx           # Lazy-loaded Mermaid SVG renderer
+│   ├── slide-list.tsx                # Sidebar with drag-and-drop reordering + section badges
 │   ├── shiki-code-block.tsx          # Syntax-highlighted code renderer
-│   ├── presentation-mode.tsx         # Legacy presentation component
 │   ├── user-menu.tsx                 # User profile + sign-out
 │   └── error-boundary.tsx            # React error boundary
 └── app/
@@ -71,8 +80,8 @@ src/
     ├── page.tsx                      # Editor home page
     ├── globals.css                   # Tailwind v4 theme + custom styles
     ├── login/page.tsx                # Login page (3 auth methods)
-    ├── present/page.tsx              # Fullscreen presentation viewer
-    ├── presenter/page.tsx            # Presenter notes window
+    ├── present/page.tsx              # Fullscreen presentation + overview/PDF print view
+    ├── presenter/page.tsx            # Presenter notes window with section context
     └── api/
         ├── auth/[...nextauth]/route.ts   # NextAuth route handler
         ├── auth/check-email/route.ts     # Email allowlist validation
@@ -324,4 +333,5 @@ Deploy to [Vercel](https://vercel.com) and set the environment variables in Sett
 - **[Framer Motion](https://motion.dev/)** — UI animations
 - **[@dnd-kit](https://dndkit.com/)** — Drag and drop
 - **[Resend](https://resend.com/)** — Email delivery for magic link auth
+- **[Mermaid](https://mermaid.js.org/)** — Diagram-as-code rendering (lazy-loaded)
 - **[Lucide](https://lucide.dev/)** — Icons

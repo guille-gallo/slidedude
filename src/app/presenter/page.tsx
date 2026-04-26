@@ -24,17 +24,14 @@ export default function PresenterPage() {
   });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
-  const [audienceBlackout, setAudienceBlackout] = useState(false);
   const startTime = useRef(Date.now());
 
-  // Listen to BroadcastChannel for slide changes + audience blackout state
+  // Listen to BroadcastChannel for slide changes
   useEffect(() => {
     const channel = new BroadcastChannel("slidedude-presenter");
     channel.onmessage = (e) => {
       if (e.data?.type === "slide-change" && typeof e.data.index === "number") {
         setCurrentIndex(e.data.index);
-      } else if (e.data?.type === "blackout" && typeof e.data.on === "boolean") {
-        setAudienceBlackout(e.data.on);
       }
     };
     return () => channel.close();
@@ -80,11 +77,6 @@ export default function PresenterPage() {
           slidedude<span className="text-emerald-400">_</span> presenter
         </h1>
         <div className="flex items-center gap-6">
-          {audienceBlackout && (
-            <span className="rounded-md bg-red-500/15 px-2 py-1 text-xs font-semibold uppercase tracking-widest text-red-400">
-              Audience: blackout
-            </span>
-          )}
           {sectionInfo?.section.name && (
             <span className="font-mono text-xs uppercase tracking-[0.3em] text-zinc-500">
               {sectionInfo.section.name}
