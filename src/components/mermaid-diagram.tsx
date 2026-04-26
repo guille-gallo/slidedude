@@ -42,6 +42,10 @@ export function MermaidDiagram({ source, theme = "dark", onReady, className }: M
             theme,
             securityLevel: "strict",
             fontFamily: "ui-sans-serif, system-ui, sans-serif",
+            themeVariables: {
+              background: "transparent",
+              clusterBkg: "transparent",
+            },
           });
           initialized = true;
           initializedTheme = theme;
@@ -54,14 +58,20 @@ export function MermaidDiagram({ source, theme = "dark", onReady, className }: M
         if (cancelled || id !== renderId.current) return;
         if (ref.current) {
           ref.current.innerHTML = svg;
-          // Make the SVG fluidly fill its container.
           const svgEl = ref.current.querySelector("svg");
           if (svgEl) {
+            // Make the SVG fluidly fill its container.
             svgEl.removeAttribute("width");
             svgEl.removeAttribute("height");
             svgEl.style.width = "100%";
             svgEl.style.height = "100%";
             svgEl.style.maxHeight = "100%";
+            svgEl.style.background = "transparent";
+            // Mermaid sometimes injects a full-size background <rect> — strip its fill.
+            svgEl.querySelectorAll("rect.background, .cluster-bkg").forEach((el) => {
+              (el as SVGElement).setAttribute("fill", "transparent");
+              (el as SVGElement).setAttribute("stroke", "none");
+            });
           }
         }
         setError(null);
