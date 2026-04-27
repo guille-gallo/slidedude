@@ -8,6 +8,20 @@ export default function LoginPage() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [oauthError, setOauthError] = useState("");
+
+  async function handleOAuth(provider: "google" | "github") {
+    setOauthError("");
+    try {
+      await signIn(provider, { callbackUrl: "/" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Sign-in failed";
+      setOauthError(
+        `${message}. If you have a content blocker or strict privacy extension, try disabling it for this site or clearing cookies and reloading.`,
+      );
+      console.error("[signIn] failed", err);
+    }
+  }
 
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
@@ -51,7 +65,7 @@ export default function LoginPage() {
       <div className="relative flex w-72 flex-col gap-3">
         {/* Google */}
         <button
-          onClick={() => signIn("google", { callbackUrl: "/" })}
+          onClick={() => handleOAuth("google")}
           className="flex w-full items-center gap-3 rounded-xl border border-[--border-bright] bg-white/[0.03] px-6 py-3 text-sm font-medium text-zinc-200 shadow-lg shadow-black/30 backdrop-blur-sm transition-all hover:bg-white/[0.06] hover:shadow-xl active:scale-[0.98]"
         >
           <svg width="18" height="18" viewBox="0 0 24 24">
@@ -65,7 +79,7 @@ export default function LoginPage() {
 
         {/* GitHub */}
         <button
-          onClick={() => signIn("github", { callbackUrl: "/" })}
+          onClick={() => handleOAuth("github")}
           className="flex w-full items-center gap-3 rounded-xl border border-[--border-bright] bg-white/[0.03] px-6 py-3 text-sm font-medium text-zinc-200 shadow-lg shadow-black/30 backdrop-blur-sm transition-all hover:bg-white/[0.06] hover:shadow-xl active:scale-[0.98]"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -73,6 +87,10 @@ export default function LoginPage() {
           </svg>
           Sign in with GitHub
         </button>
+
+        {oauthError && (
+          <p className="text-center text-sm text-red-400">{oauthError}</p>
+        )}
 
         {/* Divider */}
         <div className="flex items-center gap-3 py-1">
