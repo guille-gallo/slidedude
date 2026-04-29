@@ -107,7 +107,11 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ presentation }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.error("Offline export failed:", res.status, res.statusText);
+      alert("Failed to generate offline export. Please try again.");
+      return;
+    }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

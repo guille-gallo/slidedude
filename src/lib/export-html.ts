@@ -17,9 +17,13 @@ const LANGS = [
   "tsx",
 ] as const;
 
-/** Escape </script> sequences inside JSON to keep the HTML parser happy. */
+/** Safely embed a value as JSON inside a <script> tag.
+ *  Escapes < > & to Unicode escapes so no HTML-significant bytes appear. */
 function safeJson(value: unknown): string {
-  return JSON.stringify(value).replace(/<\/script>/gi, "<\\/script>");
+  return JSON.stringify(value)
+    .replace(/&/g, "\\u0026")
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e");
 }
 
 /** Sanitize a presentation name into a safe filename stem. */
