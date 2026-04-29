@@ -11,7 +11,7 @@ import { UserMenu } from "@/components/user-menu";
 import { exportPresentation, importPresentation } from "@/utils/export-import";
 import type { CodeSlide, ContentSlide, MermaidSlide } from "@/types";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Download, Upload, PlayIcon, Printer } from "lucide-react";
+import { Download, Upload, PlayIcon, Printer, MonitorDown } from "lucide-react";
 
 function Star() {
   return (
@@ -98,6 +98,25 @@ export default function Home() {
 
   const handleExport = useCallback(() => {
     if (presentation) exportPresentation(presentation);
+  }, [presentation]);
+
+  const handleOfflineExport = useCallback(async () => {
+    if (!presentation) return;
+    const res = await fetch("/api/export/html", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ presentation }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const disposition = res.headers.get("content-disposition") ?? "";
+    const match = disposition.match(/filename="([^"]+)"/);
+    a.download = match ? match[1] : "presentation.html";
+    a.click();
+    URL.revokeObjectURL(url);
   }, [presentation]);
 
   const handleImport = useCallback(() => {
@@ -202,6 +221,13 @@ export default function Home() {
             title="Print to PDF"
           >
             <Printer className="h-3.5 w-3.5" /> PDF
+          </button>
+          <button
+            onClick={handleOfflineExport}
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
+            title="Download as offline HTML (works without internet)"
+          >
+            <MonitorDown className="h-3.5 w-3.5" /> Offline
           </button>
           <input
             ref={fileInputRef}
