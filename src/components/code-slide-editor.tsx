@@ -54,21 +54,30 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
 
   const handleCodeChange = useCallback(
     (value: string) => {
-      const lineCount = value.split("\n").length;
-      if (lineCount > CODE_PRESENTATION_MAX_LINES || value.length > CODE_PRESENTATION_MAX_CHARS) {
-        // If the slide is already at/over the cap, the persistent banner is showing.
-        // Avoid setting an additional transient message.
+      const newLineCount = value.split("\n").length;
+      const newCharCount = value.length;
+      const currentLineCount = slide.code.split("\n").length;
+      const currentCharCount = slide.code.length;
+      const growsLines = newLineCount > currentLineCount;
+      const growsChars = newCharCount > currentCharCount;
+      const overLines = newLineCount > CODE_PRESENTATION_MAX_LINES;
+      const overChars = newCharCount > CODE_PRESENTATION_MAX_CHARS;
+
+      // Only reject edits that GROW the slide past the cap. Reductions and
+      // same-size edits must always pass through, even when already over the
+      // cap (e.g. legacy / imported slides), so users can edit their way back.
+      if ((overLines && growsLines) || (overChars && growsChars)) {
         if (!getCodeLimitInfo(slide.code).blocksPresentation) {
           flashLimitError();
         }
-        // The textarea (uncontrolled at this instant because we're not propagating)
-        // already accepted the over-limit text. Force it back to the persisted value
-        // so subsequent edits operate from a consistent state.
+        // Browser already wrote the over-limit text into the DOM; sync it back
+        // to the persisted value so the next edit starts from a clean state.
         if (textareaRef.current && textareaRef.current.value !== slide.code) {
           textareaRef.current.value = slide.code;
         }
         return;
       }
+
       if (limitMessage) {
         setLimitMessage(null);
         if (errorTimeoutRef.current) {
@@ -197,7 +206,6 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
           onKeyDown={handleKeyDown}
           onScroll={handleScroll}
           spellCheck={false}
-          maxLength={CODE_PRESENTATION_MAX_CHARS}
           className="absolute inset-0 resize-none bg-transparent py-3 pl-12 pr-4 font-mono text-sm leading-relaxed text-transparent caret-emerald-400 outline-none selection:bg-emerald-500/15"
           placeholder="Paste your code here…"
         />
