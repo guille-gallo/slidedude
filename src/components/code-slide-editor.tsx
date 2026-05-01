@@ -18,7 +18,6 @@ interface CodeSlideEditorProps {
 }
 
 const LIMIT_ERROR_MESSAGE = `Code slide is capped at ${CODE_PRESENTATION_MAX_LINES} lines / ${CODE_PRESENTATION_MAX_CHARS.toLocaleString()} chars. Split long examples into consecutive slides.`;
-
 export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -57,7 +56,11 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
     (value: string) => {
       const lineCount = value.split("\n").length;
       if (lineCount > CODE_PRESENTATION_MAX_LINES || value.length > CODE_PRESENTATION_MAX_CHARS) {
-        flashLimitError();
+        // If the slide is already at/over the cap, the persistent banner is showing.
+        // Avoid setting an additional transient message.
+        if (!getCodeLimitInfo(slide.code).blocksPresentation) {
+          flashLimitError();
+        }
         // The textarea (uncontrolled at this instant because we're not propagating)
         // already accepted the over-limit text. Force it back to the persisted value
         // so subsequent edits operate from a consistent state.
@@ -91,17 +94,17 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
       const lineCount = value.split("\n").length;
       if (lineCount >= CODE_PRESENTATION_MAX_LINES) {
         e.preventDefault();
-        flashLimitError();
+        // The persistent banner is already visible at the cap; avoid a redundant flash.
+        if (!getCodeLimitInfo(slide.code).blocksPresentation) {
+          flashLimitError();
+        }
       }
     },
-    [flashLimitError]
+    [flashLimitError, slide.code]
   );
 
   const showError = Boolean(limitMessage) || blocksPresentation;
-  const errorText = limitMessage
-    ?? (blocksPresentation
-      ? `This slide reached the ${CODE_PRESENTATION_MAX_LINES}-line limit. Split it before presenting.`
-      : null);
+  const errorText = blocksPresentation ? LIMIT_ERROR_MESSAGE : limitMessage;
 
   return (
     <div className="flex h-full flex-col gap-4">
