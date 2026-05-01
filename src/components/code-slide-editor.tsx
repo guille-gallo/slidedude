@@ -1,24 +1,47 @@
 "use client";
 
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import type { CodeSlide } from "@/types";
 import { LANG_LIST } from "@/hooks/use-highlighter";
+import {
+  CODE_PRESENTATION_MAX_CHARS,
+  CODE_PRESENTATION_MAX_LINES,
+  getCodeLimitInfo,
+} from "@/lib/code-limits";
 import { ShikiCodeBlock } from "./shiki-code-block";
 
-import { Code2, ChevronDown, StickyNote } from "lucide-react";
+import { AlertTriangle, Code2, ChevronDown, StickyNote } from "lucide-react";
 
 interface CodeSlideEditorProps {
   slide: CodeSlide;
   onChange: (patch: Partial<CodeSlide>) => void;
 }
 
+const LIMIT_ERROR_MESSAGE = `Code slide is capped at ${CODE_PRESENTATION_MAX_LINES} lines / ${CODE_PRESENTATION_MAX_CHARS.toLocaleString()} chars. Split long examples into consecutive slides.`;
+
 export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showNotes, setShowNotes] = useState(false);
+  const [limitMessage, setLimitMessage] = useState<string | null>(null);
 
-  const lineCount = slide.code.split("\n").length;
+  const limit = getCodeLimitInfo(slide.code);
+  const atLineLimit = limit.lineCount >= CODE_PRESENTATION_MAX_LINES;
+  const isOverLimit = limit.isOverLimit;
+
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+    };
+  }, []);
+
+  const flashLimitError = useCallback(() => {
+    setLimitMessage(LIMIT_ERROR_MESSAGE);
+    if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+    errorTimeoutRef.current = setTimeout(() => setLimitMessage(null), 3000);
+  }, []);
 
   const handleScroll = useCallback(() => {
     if (textareaRef.current && highlightRef.current) {
@@ -29,6 +52,50 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
       gutterRef.current.scrollTop = textareaRef.current.scrollTop;
     }
   }, []);
+
+  const handleCodeChange = useCallback(
+    (value: string) => {
+      const lineCount = value.split("\n").length;
+      if (lineCount > CODE_PRESENTATION_MAX_LINES || value.length > CODE_PRESENTATION_MAX_CHARS) {
+        flashLimitError();
+        return;
+      }
+      if (limitMessage) {
+        setLimitMessage(null);
+        if (errorTimeoutRef.current) {
+          clearTimeout(errorTimeoutRef.current);
+          errorTimeoutRef.current = null;
+        }
+      }
+      onChange({ code: value });
+    },
+    [onChange, flashLimitError, limitMessage]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.currentTarget;
+      const { selectionStart, selectionEnd, value } = target;
+      // If the selection covers any newline(s), Enter is a net replacement that won't grow line count.
+      if (selectionStart !== selectionEnd) {
+        const selected = value.slice(selectionStart, selectionEnd);
+        if (selected.includes("\n")) return;
+      }
+      const lineCount = value.split("\n").length;
+      if (lineCount >= CODE_PRESENTATION_MAX_LINES) {
+        e.preventDefault();
+        flashLimitError();
+      }
+    },
+    [flashLimitError]
+  );
+
+  const showError = Boolean(limitMessage) || isOverLimit;
+  const errorText = limitMessage
+    ?? (isOverLimit
+      ? `This slide exceeds the ${CODE_PRESENTATION_MAX_LINES}-line limit. Split it before presenting.`
+      : null);
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -65,7 +132,25 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
             ))}
           </select>
         </div>
+
+        <div
+          className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs ${
+            atLineLimit
+              ? "border-red-500/30 bg-red-500/10 text-red-300"
+              : "border-[--border] bg-white/[0.02] text-zinc-500"
+          }`}
+          title={`Code slides are capped at ${CODE_PRESENTATION_MAX_LINES} lines so they fit small screens. Split longer snippets into consecutive slides.`}
+        >
+          {atLineLimit && <AlertTriangle className="h-3.5 w-3.5" />}
+          <span className="font-mono">{limit.lineCount}/{CODE_PRESENTATION_MAX_LINES} lines</span>
+        </div>
       </div>
+
+      {showError && errorText && (
+        <p className="text-xs text-red-300">
+          {errorText}
+        </p>
+      )}
 
       {/* Overlay code editor */}
       <div className="relative flex-1 overflow-hidden rounded-lg border border-[--border] bg-[#0a0a0a]">
@@ -74,7 +159,7 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
           ref={gutterRef}
           className="absolute inset-y-0 left-0 z-10 w-10 overflow-hidden border-r border-white/[0.06] bg-[#0a0a0a] py-3"
         >
-          {Array.from({ length: lineCount }, (_, i) => (
+          {Array.from({ length: limit.lineCount }, (_, i) => (
             <div
               key={i}
               className="block w-full pr-2 text-right font-mono text-sm leading-relaxed text-zinc-700"
@@ -99,9 +184,11 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
         <textarea
           ref={textareaRef}
           value={slide.code}
-          onChange={(e) => onChange({ code: e.target.value })}
+          onChange={(e) => handleCodeChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           onScroll={handleScroll}
           spellCheck={false}
+          maxLength={CODE_PRESENTATION_MAX_CHARS}
           className="absolute inset-0 resize-none bg-transparent py-3 pl-12 pr-4 font-mono text-sm leading-relaxed text-transparent caret-emerald-400 outline-none selection:bg-emerald-500/15"
           placeholder="Paste your code here…"
         />

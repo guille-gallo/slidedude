@@ -258,7 +258,8 @@ html,body{height:100%;background:#000;color:#e4e4e7;font-family:ui-sans-serif,sy
 /* Wrapper matches live presenter: no background, no radius, no scrollbars during the
    magic-move container-resize animation. */
 .code-wrapper{width:100%;flex:1;min-height:0;overflow:hidden;padding:24px;}
-.magic-code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:14px;line-height:1.6;tab-size:2;}
+.magic-code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:15px;line-height:1.6;tab-size:2;}
+
 /* Content view */
 #content-view{display:none;flex-direction:column;align-items:center;gap:24px;width:100%;text-align:center;}
 #content-body{max-width:768px;white-space:pre-wrap;font-size:1.25rem;color:#a1a1aa;line-height:1.7;}
