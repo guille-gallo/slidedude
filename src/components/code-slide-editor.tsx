@@ -58,6 +58,12 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
       const lineCount = value.split("\n").length;
       if (lineCount > CODE_PRESENTATION_MAX_LINES || value.length > CODE_PRESENTATION_MAX_CHARS) {
         flashLimitError();
+        // The textarea (uncontrolled at this instant because we're not propagating)
+        // already accepted the over-limit text. Force it back to the persisted value
+        // so subsequent edits operate from a consistent state.
+        if (textareaRef.current && textareaRef.current.value !== slide.code) {
+          textareaRef.current.value = slide.code;
+        }
         return;
       }
       if (limitMessage) {
@@ -69,7 +75,7 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
       }
       onChange({ code: value });
     },
-    [onChange, flashLimitError, limitMessage]
+    [onChange, flashLimitError, limitMessage, slide.code]
   );
 
   const handleKeyDown = useCallback(

@@ -312,17 +312,19 @@ export default function Home() {
             <Upload className="h-3.5 w-3.5" /> Import
           </button>
           <button
-            onClick={() => openPresentation("/present?print=1")}
-            disabled={presentationIsBlocked}
-            className={`flex items-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2.5 py-1.5 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-60 ${presentationIsBlocked ? "text-zinc-700" : "text-zinc-400 hover:border-[--border-bright] hover:bg-white/[0.04] hover:text-zinc-200"}`}
+            type="button"
+            onClick={() => { if (!presentationIsBlocked) openPresentation("/present?print=1"); }}
+            aria-disabled={presentationIsBlocked}
+            className={`flex items-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2.5 py-1.5 text-xs transition-all ${presentationIsBlocked ? "cursor-not-allowed text-zinc-500/70" : "text-zinc-400 hover:border-[--border-bright] hover:bg-white/[0.04] hover:text-zinc-200"}`}
             title={presentationIsBlocked ? presentationBlockedMessage : "Print to PDF"}
           >
             <Printer className="h-3.5 w-3.5" /> PDF
           </button>
           <button
-            onClick={handleOfflineExport}
-            disabled={presentationIsBlocked}
-            className={`flex items-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2.5 py-1.5 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-60 ${presentationIsBlocked ? "text-zinc-700" : "text-zinc-400 hover:border-[--border-bright] hover:bg-white/[0.04] hover:text-zinc-200"}`}
+            type="button"
+            onClick={() => { if (!presentationIsBlocked) void handleOfflineExport(); }}
+            aria-disabled={presentationIsBlocked}
+            className={`flex items-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2.5 py-1.5 text-xs transition-all ${presentationIsBlocked ? "cursor-not-allowed text-zinc-500/70" : "text-zinc-400 hover:border-[--border-bright] hover:bg-white/[0.04] hover:text-zinc-200"}`}
             title={presentationIsBlocked ? presentationBlockedMessage : "Download as offline HTML (works without internet)"}
           >
             <MonitorDown className="h-3.5 w-3.5" /> Offline
@@ -337,9 +339,9 @@ export default function Home() {
           />
           <span className="mx-1 h-4 w-px bg-[--border-bright]" />
           <button
-            onClick={() => openPresentation("/present")}
-            disabled={presentationIsBlocked}
-            className={`group relative flex items-center gap-1.5 overflow-visible rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 ${presentationIsBlocked ? "bg-zinc-800 text-zinc-600 shadow-none" : "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 hover:bg-transparent hover:text-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] active:scale-95"}`}
+            onClick={() => { if (!presentationIsBlocked) openPresentation("/present"); }}
+            aria-disabled={presentationIsBlocked}
+            className={`group relative flex items-center gap-1.5 overflow-visible rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-300 ${presentationIsBlocked ? "cursor-not-allowed bg-emerald-500/20 text-emerald-200/60 shadow-none" : "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 hover:bg-transparent hover:text-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] active:scale-95"}`}
             title={presentationIsBlocked ? presentationBlockedMessage : "Present"}
           >
             <PlayIcon className="h-3.5 w-3.5" /> Present
