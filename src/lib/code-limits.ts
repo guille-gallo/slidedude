@@ -51,7 +51,7 @@ export function getCodeLimitInfo(code: string): CodeLimitInfo {
     isOverLineLimit: lineCount > CODE_PRESENTATION_MAX_LINES,
     isOverCharLimit: charCount > CODE_PRESENTATION_MAX_CHARS,
     isOverLimit: lineCount > CODE_PRESENTATION_MAX_LINES || charCount > CODE_PRESENTATION_MAX_CHARS,
-    blocksPresentation: lineCount > CODE_PRESENTATION_MAX_LINES || charCount > CODE_PRESENTATION_MAX_CHARS,
+    blocksPresentation: lineCount >= CODE_PRESENTATION_MAX_LINES || charCount >= CODE_PRESENTATION_MAX_CHARS,
   };
 }
 

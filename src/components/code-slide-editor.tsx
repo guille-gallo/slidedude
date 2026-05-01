@@ -29,7 +29,7 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
 
   const limit = getCodeLimitInfo(slide.code);
   const atLineLimit = limit.lineCount >= CODE_PRESENTATION_MAX_LINES;
-  const isOverLimit = limit.isOverLimit;
+  const blocksPresentation = limit.blocksPresentation;
 
   useEffect(() => {
     return () => {
@@ -91,10 +91,10 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
     [flashLimitError]
   );
 
-  const showError = Boolean(limitMessage) || isOverLimit;
+  const showError = Boolean(limitMessage) || blocksPresentation;
   const errorText = limitMessage
-    ?? (isOverLimit
-      ? `This slide exceeds the ${CODE_PRESENTATION_MAX_LINES}-line limit. Split it before presenting.`
+    ?? (blocksPresentation
+      ? `This slide reached the ${CODE_PRESENTATION_MAX_LINES}-line limit. Split it before presenting.`
       : null);
 
   return (

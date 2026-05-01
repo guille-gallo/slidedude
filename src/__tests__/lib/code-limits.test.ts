@@ -16,13 +16,13 @@ describe("code presentation limits", () => {
     expect(info.blocksPresentation).toBe(false);
   });
 
-  it("treats exactly the maximum line count as still presentable", () => {
+  it("blocks presentation as soon as a slide hits the maximum line count", () => {
     const code = Array.from({ length: CODE_PRESENTATION_MAX_LINES }, (_, index) => `const line${index} = ${index};`).join("\n");
     const info = getCodeLimitInfo(code);
 
     expect(info.isOverLimit).toBe(false);
     expect(info.isAtLineLimit).toBe(true);
-    expect(info.blocksPresentation).toBe(false);
+    expect(info.blocksPresentation).toBe(true);
   });
 
   it("flags slides that exceed the maximum line count as blocking", () => {
@@ -35,7 +35,7 @@ describe("code presentation limits", () => {
   });
 
   it("reports code slides that block presentation", () => {
-    const code = Array.from({ length: CODE_PRESENTATION_MAX_LINES + 1 }, (_, index) => `const line${index} = ${index};`).join("\n");
+    const code = Array.from({ length: CODE_PRESENTATION_MAX_LINES }, (_, index) => `const line${index} = ${index};`).join("\n");
     const blockers = getCodePresentationBlockers([
       {
         id: "slide-1",
@@ -50,7 +50,7 @@ describe("code presentation limits", () => {
       {
         index: 0,
         title: "Too long",
-        lineCount: CODE_PRESENTATION_MAX_LINES + 1,
+        lineCount: CODE_PRESENTATION_MAX_LINES,
         charCount: code.length,
       },
     ]);
