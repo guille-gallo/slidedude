@@ -17,7 +17,7 @@ export function isEmailAllowed(email: string): boolean {
   return allowedEmails.includes(normalizeEmail(email));
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth: nextAuthAuth, signIn, signOut } = NextAuth({
   adapter: UpstashRedisAdapter(redis),
   providers: [
     Google({
@@ -65,3 +65,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+/**
+ * E2E auth bypass.
+ *
+ * When `E2E_BYPASS="1"` AND we are NOT in production, `auth()` returns a
+ * synthetic session for `e2e@test.local`. This lets Playwright drive the app
+ * without going through Google/GitHub/Resend.
+ *
+ * Hard-guarded so a misconfigured prod deploy can't accidentally bypass auth:
+ *   - The flag is opt-in (must equal the literal string "1").
+ *   - `NODE_ENV` must be exactly "development" or "test" (allow-list, not
+ *     just `!== "production"`, so an unset/unknown value can't enable it).
+ *   - Refuses to activate on any Vercel deployment (`VERCEL` is set in every
+ *     build/runtime env on Vercel, including preview and production).
+ */
+const NODE_ENV = process.env.NODE_ENV;
+const E2E_BYPASS_ENABLED =
+  process.env.E2E_BYPASS === "1" &&
+  (NODE_ENV === "development" || NODE_ENV === "test") &&
+  !process.env.VERCEL &&
+  !process.env.VERCEL_ENV;
+
+const E2E_FAKE_SESSION = {
+  user: {
+    email: "e2e@test.local",
+    name: "E2E Test User",
+    image: undefined,
+  },
+  expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+};
+
+export const auth: typeof nextAuthAuth = ((...args: unknown[]) => {
+  if (E2E_BYPASS_ENABLED) {
+    // The real `auth()` has overloads (callable handler vs direct call).
+    // Playwright only invokes the no-arg form via proxy/route handlers, so
+    // returning a resolved fake session is sufficient.
+    return Promise.resolve(E2E_FAKE_SESSION);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (nextAuthAuth as any)(...args);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}) as any;

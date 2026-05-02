@@ -103,7 +103,10 @@ _No OG tags, no robots.txt, no loading states, no dynamic metadata._
 ## Excluded
 
 - PWA / service worker (overkill for 10 users)
-- E2E tests with Playwright (future phase)
 - Database migration from Redis
 - Multi-user collaboration / sharing
 - ShikiMagicMove performance (separate task)
+
+## Phase 7 (done): E2E with Playwright
+
+Chromium only, single dev server on port 3100, auth bypassed via `E2E_BYPASS=1` in `src/auth.ts`, `/api/presentations` stubbed via Playwright's `page.route()`. 15 specs across smoke / editor / persistence / export-import / present-mode / errors. Runs on every PR via `.github/workflows/e2e.yml`.
