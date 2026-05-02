@@ -322,10 +322,13 @@ describe("presentation store", () => {
     });
 
     it("keeps local data when server is unreachable", async () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
       await usePresentationStore.getState().loadFromServer();
       const state = usePresentationStore.getState();
       expect(state.presentations[0].name).toBe("Test Presentation");
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
     });
   });
 });
