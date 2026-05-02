@@ -49,6 +49,38 @@ export const test = base.extend<Fixtures>({
       } catch {
         // ignore storage failures (private mode etc.)
       }
+
+      // Neutralise the Next.js dev error/warning overlay. In CI, transient
+      // hydration warnings or fast-refresh notices render a `<nextjs-portal>`
+      // (a shadow-host) that absorbs pointer events. CSS rules on the host
+      // can be overridden from inside the shadow root, so we instead remove
+      // the portal node whenever it is inserted, AND disable pointer events
+      // as a fallback. Tests should not gate on dev-only UI.
+      const killPortal = (root: ParentNode) => {
+        for (const el of root.querySelectorAll("nextjs-portal")) {
+          (el as HTMLElement).style.pointerEvents = "none";
+          el.remove();
+        }
+      };
+      const startObserver = () => {
+        killPortal(document);
+        new MutationObserver((records) => {
+          for (const r of records) {
+            for (const node of r.addedNodes) {
+              if (node.nodeType !== 1) continue;
+              const el = node as Element;
+              if (el.tagName === "NEXTJS-PORTAL") {
+                (el as HTMLElement).style.pointerEvents = "none";
+                el.remove();
+              } else {
+                killPortal(el);
+              }
+            }
+          }
+        }).observe(document.documentElement, { childList: true, subtree: true });
+      };
+      if (document.documentElement) startObserver();
+      else document.addEventListener("DOMContentLoaded", startObserver, { once: true });
     });
 
     await page.route("**/api/presentations", async (route: Route) => {
