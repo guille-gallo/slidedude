@@ -20,6 +20,7 @@ An animated code presentation tool for creating polished technical talks. Write 
 - **Export / Import** — Back up presentations as `.slidedude.json` files (IDs regenerated on import)
 - **Presenter mode** — Separate presenter window with notes, next slide preview, section context, and elapsed timer
 - **Multi-window sync** — BroadcastChannel API keeps editor, presentation, and presenter windows in sync
+- **Learn drawer + templates** — Built-in tutorial deck and starter decks for technical talks, code walkthroughs, and architecture reviews
 - **Error boundaries** — Graceful recovery from runtime errors
 
 ## Keyboard shortcuts

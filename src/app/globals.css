@@ -82,10 +82,38 @@ label[for] {
   z-index: 2;
 }
 
-/* Strip Shiki theme background in the overlay editor */
+/* Shiki textarea-overlay editor: enforce strict metric parity between the
+   <textarea> caret layer, the syntax-highlighted <pre>/<code> layer, and the
+   line-number gutter. Any divergence in font-family, font-size, line-height,
+   letter-spacing, tab-size, or padding causes the caret to drift relative to
+   the rendered glyphs (visible after ~20 lines as sub-pixel rounding
+   accumulates). Use an integer pixel line-height to avoid that drift. */
+.shiki-overlay-textarea,
+.shiki-overlay-editor,
+.shiki-overlay-editor pre,
+.shiki-overlay-editor pre code,
+.shiki-overlay-gutter,
+.shiki-overlay-line {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 22px; /* integer px — avoids sub-pixel drift on long snippets */
+  letter-spacing: 0;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  font-variant-ligatures: none;
+}
+
 .shiki-overlay-editor pre,
 .shiki-overlay-editor pre code {
   background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: pre !important;
+  word-spacing: 0 !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
 }
 
 /* Presentation-mode styling */
@@ -95,6 +123,19 @@ label[for] {
   font-variant-ligatures: none;
   tab-size: 2;
   background: transparent !important;
+  overflow: hidden !important;
+}
+
+.magic-move-static pre.shiki,
+.magic-move-static pre.shiki code {
+  font-size: inherit;
+  line-height: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: transparent !important;
+}
+
+.magic-move-static pre.shiki {
+  margin: 0;
   overflow: hidden !important;
 }
 

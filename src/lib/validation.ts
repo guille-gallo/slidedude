@@ -2,7 +2,7 @@ import type { Presentation, Slide } from "@/types";
 
 const MAX_STRING_LENGTH = 100_000;
 const MAX_SLIDES = 200;
-const MAX_PRESENTATIONS = 50;
+export const MAX_PRESENTATIONS = 50;
 
 function isValidString(v: unknown, maxLen = MAX_STRING_LENGTH): v is string {
   return typeof v === "string" && v.length <= maxLen;

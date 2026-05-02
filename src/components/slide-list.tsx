@@ -18,7 +18,12 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Slide } from "@/types";
-import { GripVertical, Copy, Trash2, Code2, Type, Workflow } from "lucide-react";
+import { GripVertical, Copy, Trash2, Code2, Type, Workflow, AlertTriangle } from "lucide-react";
+import {
+  CODE_PRESENTATION_MAX_CHARS,
+  CODE_PRESENTATION_MAX_LINES,
+  getCodeLimitInfo,
+} from "@/lib/code-limits";
 
 interface SlideListProps {
   slides: Slide[];
@@ -55,6 +60,14 @@ function SortableSlideItem({
     opacity: isDragging ? 0.5 : undefined,
   };
 
+  const codeLimit = slide.type === "code" ? getCodeLimitInfo(slide.code) : null;
+  const blocksPresentation = codeLimit?.blocksPresentation ?? false;
+  const blockReason = codeLimit && blocksPresentation
+    ? codeLimit.lineCount >= CODE_PRESENTATION_MAX_LINES
+      ? `${codeLimit.lineCount}/${CODE_PRESENTATION_MAX_LINES} lines — over the cap. Split this slide to enable Present.`
+      : `${codeLimit.charCount.toLocaleString()}/${CODE_PRESENTATION_MAX_CHARS.toLocaleString()} chars — over the cap. Split this slide to enable Present.`
+    : null;
+
   return (
     <div
       ref={setNodeRef}
@@ -66,12 +79,20 @@ function SortableSlideItem({
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
       className={`group relative cursor-pointer rounded-lg border p-2.5 transition-all duration-150 ${
         isActive
-          ? "border-emerald-500/50 bg-emerald-500/[0.08] shadow-[0_0_16px_-4px_rgba(52,211,153,0.25),inset_0_0_0_1px_rgba(52,211,153,0.1)]"
-          : "border-[--border] bg-white/[0.02] hover:border-[--border-bright] hover:bg-white/[0.04]"
+          ? blocksPresentation
+            ? "border-red-500/50 bg-red-500/[0.06] shadow-[0_0_16px_-4px_rgba(248,113,113,0.25),inset_0_0_0_1px_rgba(248,113,113,0.12)]"
+            : "border-emerald-500/50 bg-emerald-500/[0.08] shadow-[0_0_16px_-4px_rgba(52,211,153,0.25),inset_0_0_0_1px_rgba(52,211,153,0.1)]"
+          : blocksPresentation
+            ? "border-red-500/30 bg-red-500/[0.03] hover:border-red-500/50 hover:bg-red-500/[0.06]"
+            : "border-[--border] bg-white/[0.02] hover:border-[--border-bright] hover:bg-white/[0.04]"
       }`}
     >
       {isActive && (
-        <div className="absolute left-0 top-[15%] h-[70%] w-[2px] rounded-full bg-emerald-400" />
+        <div
+          className={`absolute left-0 top-[15%] h-[70%] w-[2px] rounded-full ${
+            blocksPresentation ? "bg-red-400" : "bg-emerald-400"
+          }`}
+        />
       )}
       <div className="flex items-center gap-2">
         <span
@@ -95,6 +116,15 @@ function SortableSlideItem({
         >
           {slide.type === "mermaid" ? "diagram" : slide.type}
         </span>
+        {blocksPresentation && (
+          <span
+            className="ml-1 flex shrink-0 items-center text-red-400"
+            title={blockReason ?? "Slide exceeds presentation limits"}
+            aria-label={blockReason ?? "Slide exceeds presentation limits"}
+          >
+            <AlertTriangle className="h-3 w-3" aria-hidden />
+          </span>
+        )}
       </div>
       {slide.section && (
         <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-wider text-zinc-600">

@@ -10,12 +10,13 @@ import Image from "next/image";
 import { MermaidDiagram } from "@/components/mermaid-diagram";
 import { ShikiCodeBlock } from "@/components/shiki-code-block";
 import { groupSections, findSection } from "@/lib/sections";
+import { CODE_PRESENTATION_MAX_LINES, getCodePresentationBlockers } from "@/lib/code-limits";
 
 function useHydration() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     if (usePresentationStore.persist.hasHydrated()) {
-      setHydrated(true);
+      queueMicrotask(() => setHydrated(true));
       return;
     }
     const unsub = usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
@@ -27,7 +28,6 @@ function useHydration() {
 
 function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIndex: number }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const containerRef = useRef<HTMLDivElement>(null);
   const highlighter = useHighlighter();
   const animating = useRef(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
@@ -36,6 +36,7 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
   const currentSlide = slides[currentIndex];
   const sections = useMemo(() => groupSections(slides), [slides]);
   const sectionInfo = useMemo(() => findSection(slides, currentIndex), [slides, currentIndex]);
+  const canAnimateCode = currentSlide?.type === "code" && Boolean(highlighter);
 
   // BroadcastChannel — send index to presenter notes window
   useEffect(() => {
@@ -68,21 +69,8 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
     setCurrentIndex((i) => Math.max(i - 1, 0));
   }, []);
 
-  useEffect(() => {
-    containerRef.current?.focus();
-  }, []);
-
-  // Refocus the container when leaving the overview so arrow-key navigation
-  // continues to work (clicking a thumbnail moves focus to the button, which
-  // is unmounted when overview closes — focus would otherwise fall to <body>).
-  useEffect(() => {
-    if (!overview) {
-      containerRef.current?.focus();
-    }
-  }, [overview]);
-
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+    (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault();
         if (overview) return;
@@ -120,13 +108,15 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
     [next, prev, overview],
   );
 
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
   if (!currentSlide) return null;
 
   return (
     <div
-      ref={containerRef}
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
       className="relative flex h-screen flex-col bg-[#000] outline-none"
     >
       {/* Section progress bar */}
@@ -176,7 +166,7 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
                 </h1>
               )}
               <div className="w-full flex-1 min-h-0 overflow-hidden p-6">
-                {highlighter ? (
+                {canAnimateCode && highlighter ? (
                   <ShikiMagicMove
                     highlighter={highlighter}
                     code={currentSlide.code}
@@ -193,7 +183,7 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
                     className="magic-move-code"
                   />
                 ) : (
-                  <pre className="text-zinc-300">
+                  <pre className="magic-move-code text-zinc-300">
                     <code>{currentSlide.code}</code>
                   </pre>
                 )}
@@ -346,11 +336,15 @@ export default function PresentPage() {
     return s.presentations.find((p) => p.id === id);
   });
   const [printMode, setPrintMode] = useState(false);
+  const presentationBlockers = useMemo(
+    () => presentation ? getCodePresentationBlockers(presentation.slides) : [],
+    [presentation],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    setPrintMode(params.get("print") === "1");
+    queueMicrotask(() => setPrintMode(params.get("print") === "1"));
   }, []);
 
   if (!hydrated || !presentation) {
@@ -359,6 +353,10 @@ export default function PresentPage() {
         Loading…
       </div>
     );
+  }
+
+  if (presentationBlockers.length > 0) {
+    return <PresentationBlocked blockers={presentationBlockers} />;
   }
 
   if (printMode) {
@@ -370,6 +368,24 @@ export default function PresentPage() {
       slides={presentation.slides}
       initialIndex={presentation.activeSlideIndex}
     />
+  );
+}
+
+function PresentationBlocked({ blockers }: { blockers: ReturnType<typeof getCodePresentationBlockers> }) {
+  const first = blockers[0];
+
+  return (
+    <div className="flex h-screen items-center justify-center bg-[#000] px-6 text-zinc-100">
+      <div className="max-w-md rounded-lg border border-red-500/25 bg-red-500/10 p-5 text-center shadow-2xl shadow-black/40">
+        <h1 className="text-lg font-semibold text-red-100">Presentation blocked</h1>
+        <p className="mt-3 text-sm leading-6 text-red-100/80">
+          Slide {first.index + 1} ({first.title}) reached the {CODE_PRESENTATION_MAX_LINES}-line code limit.
+        </p>
+        <p className="mt-2 text-xs leading-5 text-red-100/65">
+          Split it into smaller consecutive code slides before presenting.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -413,8 +429,8 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
           background: #0d1117 !important;
           padding: 1.5rem;
           border-radius: 0.5rem;
-          font-size: 0.875rem;
-          line-height: 1.6;
+          font-size: inherit;
+          line-height: inherit;
           overflow: hidden;
           margin: 0;
         }
@@ -438,15 +454,7 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
             {i + 1} / {slides.length}
           </div>
           {slide.type === "code" ? (
-            <div className="flex w-full max-w-4xl flex-col items-center gap-6">
-              {slide.title && <h2 className="text-3xl font-bold">{slide.title}</h2>}
-              <ShikiCodeBlock
-                code={slide.code}
-                lang={slide.language}
-                theme="github-dark"
-                className="w-full"
-              />
-            </div>
+            <PrintCodeSlide slide={slide} />
           ) : slide.type === "mermaid" ? (
             <div className="flex w-full max-w-4xl flex-col items-center gap-6">
               {slide.title && <h2 className="text-3xl font-bold">{slide.title}</h2>}
@@ -479,6 +487,20 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
           )}
         </section>
       ))}
+    </div>
+  );
+}
+
+function PrintCodeSlide({ slide }: { slide: Extract<Slide, { type: "code" }> }) {
+  return (
+    <div className="flex w-full max-w-4xl flex-col items-center gap-4 text-[15px] leading-[1.6]">
+      {slide.title && <h2 className="text-3xl font-bold leading-tight">{slide.title}</h2>}
+      <ShikiCodeBlock
+        code={slide.code}
+        lang={slide.language}
+        theme="github-dark"
+        className="w-full"
+      />
     </div>
   );
 }

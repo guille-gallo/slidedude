@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useState, useRef } from "react";
+import { useEffect, useCallback, useMemo, useState, useRef } from "react";
 import { usePresentationStore } from "@/store/presentation-store";
 import { SlideList } from "@/components/slide-list";
 import { CodeSlideEditor } from "@/components/code-slide-editor";
@@ -8,10 +8,15 @@ import { ContentSlideEditor } from "@/components/content-slide-editor";
 import { MermaidSlideEditor } from "@/components/mermaid-slide-editor";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { UserMenu } from "@/components/user-menu";
+import { LearnDrawer } from "@/components/learn-drawer";
+import { PresentationSwitcher } from "@/components/presentation-switcher";
 import { exportPresentation, importPresentation } from "@/utils/export-import";
+import { createPresentationFromTemplate, createTutorialPresentation } from "@/lib/templates";
+import { CODE_PRESENTATION_MAX_LINES, getCodePresentationBlockers } from "@/lib/code-limits";
+import { MAX_PRESENTATIONS } from "@/lib/validation";
 import type { CodeSlide, ContentSlide, MermaidSlide } from "@/types";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Download, Upload, PlayIcon, Printer, MonitorDown } from "lucide-react";
+import { BookOpen, Download, Upload, PlayIcon, Printer, MonitorDown } from "lucide-react";
 
 function Star() {
   return (
@@ -27,7 +32,7 @@ function useHydration() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     if (usePresentationStore.persist.hasHydrated()) {
-      setHydrated(true);
+      queueMicrotask(() => setHydrated(true));
       return;
     }
     const unsub = usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
@@ -43,14 +48,56 @@ export default function Home() {
   const presentation = store.getActivePresentation();
   const activeSlide = store.getActiveSlide();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [learnOpen, setLearnOpen] = useState(false);
+  const [serverLoaded, setServerLoaded] = useState(false);
+  const presentationBlockers = useMemo(
+    () => presentation ? getCodePresentationBlockers(presentation.slides) : [],
+    [presentation],
+  );
+  const firstPresentationBlocker = presentationBlockers[0];
+  const presentationBlockedMessage = firstPresentationBlocker
+    ? `Slide ${firstPresentationBlocker.index + 1} (${firstPresentationBlocker.title}) reached the ${CODE_PRESENTATION_MAX_LINES}-line code limit. Split it into smaller code slides before presenting.`
+    : "";
+  const presentationIsBlocked = presentationBlockers.length > 0;
+
+  const showPresentationBlocked = useCallback(() => {
+    if (presentationBlockedMessage) alert(presentationBlockedMessage);
+  }, [presentationBlockedMessage]);
+
+  const openPresentation = useCallback((path: string) => {
+    if (presentationIsBlocked) {
+      showPresentationBlocked();
+      return;
+    }
+    window.open(path, "_blank");
+  }, [presentationIsBlocked, showPresentationBlocked]);
 
   // Load from server on mount
   useEffect(() => {
-    if (hydrated) {
-      store.loadFromServer();
-    }
+    if (!hydrated) return;
+
+    let cancelled = false;
+    void store.loadFromServer().finally(() => {
+      if (!cancelled) setServerLoaded(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
+
+  useEffect(() => {
+    if (!serverLoaded) return;
+    try {
+      if (localStorage.getItem("slidedude-learn-seen") !== "true") {
+        setLearnOpen(true);
+        localStorage.setItem("slidedude-learn-seen", "true");
+      }
+    } catch {
+      // Ignore private browsing or storage failures; the drawer is still available.
+    }
+  }, [serverLoaded]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -61,7 +108,7 @@ export default function Home() {
 
       if (e.key === "F5") {
         e.preventDefault();
-        window.open("/present", "_blank");
+        openPresentation("/present");
       }
       if (e.key === "N" && e.shiftKey && !isInput) {
         e.preventDefault();
@@ -86,7 +133,7 @@ export default function Home() {
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [store, presentation]);
+  }, [store, presentation, openPresentation]);
 
   const handleSlideUpdate = useCallback(
     (patch: Partial<CodeSlide> | Partial<ContentSlide> | Partial<MermaidSlide>) => {
@@ -102,6 +149,10 @@ export default function Home() {
 
   const handleOfflineExport = useCallback(async () => {
     if (!presentation) return;
+    if (presentationIsBlocked) {
+      showPresentationBlocked();
+      return;
+    }
     const res = await fetch("/api/export/html", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -121,11 +172,36 @@ export default function Home() {
     a.download = match ? match[1] : "presentation.html";
     a.click();
     URL.revokeObjectURL(url);
-  }, [presentation]);
+  }, [presentation, presentationIsBlocked, showPresentationBlocked]);
 
   const handleImport = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
+
+  const showPresentationLimit = useCallback(() => {
+    alert(`You can keep up to ${MAX_PRESENTATIONS} presentations. Delete one or export a backup before creating another.`);
+  }, []);
+
+  const handleCreateTutorial = useCallback(() => {
+    if (!store.importPresentation(createTutorialPresentation())) {
+      showPresentationLimit();
+      return;
+    }
+    setLearnOpen(false);
+  }, [store, showPresentationLimit]);
+
+  const handleCreateTemplate = useCallback(
+    (templateId: string) => {
+      const templatePresentation = createPresentationFromTemplate(templateId);
+      if (!templatePresentation) return;
+      if (!store.importPresentation(templatePresentation)) {
+        showPresentationLimit();
+        return;
+      }
+      setLearnOpen(false);
+    },
+    [store, showPresentationLimit]
+  );
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,7 +211,9 @@ export default function Home() {
       reader.onload = () => {
         const result = importPresentation(reader.result as string);
         if (result) {
-          store.importPresentation(result);
+          if (!store.importPresentation(result)) {
+            showPresentationLimit();
+          }
         } else {
           alert("Invalid .slidedude.json file");
         }
@@ -143,7 +221,7 @@ export default function Home() {
       reader.readAsText(file);
       e.target.value = "";
     },
-    [store]
+    [store, showPresentationLimit]
   );
 
   // Render the editor shell optimistically using the store's default state.
@@ -186,10 +264,17 @@ export default function Home() {
       )}
 
       {/* Top bar — glassmorphic */}
-      <header className="relative z-10 flex items-center justify-between border-b border-[--border] bg-[--surface]/80 px-5 py-2.5 backdrop-blur-xl">
+      <header className="relative z-20 flex items-center justify-between border-b border-[--border] bg-[--surface]/80 px-5 py-2.5 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <h1 className="font-mono text-base font-semibold tracking-wide text-white">slidedude<span className="text-emerald-400">_</span></h1>
           <span className="h-4 w-px bg-[--border-bright]" />
+          <PresentationSwitcher
+            presentations={store.presentations}
+            activePresentationId={store.activePresentationId}
+            onSelect={(id) => store.setActivePresentation(id)}
+            onDelete={(id) => store.deletePresentation(id)}
+            onDeleteAll={() => store.deleteAllPresentations()}
+          />
           <input
             type="text"
             value={presentation.name}
@@ -206,30 +291,41 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-1">
           <button
+            onClick={() => setLearnOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2.5 py-1.5 text-xs text-zinc-400 transition-all hover:border-[--border-bright] hover:bg-white/[0.04] hover:text-zinc-200"
+            title="Learn slidedude"
+          >
+            <BookOpen className="h-3.5 w-3.5" /> Learn
+          </button>
+          <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
+            className="flex items-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2.5 py-1.5 text-xs text-zinc-400 transition-all hover:border-[--border-bright] hover:bg-white/[0.04] hover:text-zinc-200"
             title="Export presentation"
           >
             <Download className="h-3.5 w-3.5" /> Export
           </button>
           <button
             onClick={handleImport}
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
+            className="flex items-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2.5 py-1.5 text-xs text-zinc-400 transition-all hover:border-[--border-bright] hover:bg-white/[0.04] hover:text-zinc-200"
             title="Import presentation"
           >
             <Upload className="h-3.5 w-3.5" /> Import
           </button>
           <button
-            onClick={() => window.open("/present?print=1", "_blank")}
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
-            title="Print to PDF"
+            type="button"
+            onClick={() => { if (!presentationIsBlocked) openPresentation("/present?print=1"); }}
+            aria-disabled={presentationIsBlocked}
+            className={`flex items-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2.5 py-1.5 text-xs transition-all ${presentationIsBlocked ? "cursor-not-allowed text-zinc-500/70" : "text-zinc-400 hover:border-[--border-bright] hover:bg-white/[0.04] hover:text-zinc-200"}`}
+            title={presentationIsBlocked ? presentationBlockedMessage : "Print to PDF"}
           >
             <Printer className="h-3.5 w-3.5" /> PDF
           </button>
           <button
-            onClick={handleOfflineExport}
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
-            title="Download as offline HTML (works without internet)"
+            type="button"
+            onClick={() => { if (!presentationIsBlocked) void handleOfflineExport(); }}
+            aria-disabled={presentationIsBlocked}
+            className={`flex items-center gap-1.5 rounded-md border border-[--border] bg-white/[0.02] px-2.5 py-1.5 text-xs transition-all ${presentationIsBlocked ? "cursor-not-allowed text-zinc-500/70" : "text-zinc-400 hover:border-[--border-bright] hover:bg-white/[0.04] hover:text-zinc-200"}`}
+            title={presentationIsBlocked ? presentationBlockedMessage : "Download as offline HTML (works without internet)"}
           >
             <MonitorDown className="h-3.5 w-3.5" /> Offline
           </button>
@@ -243,34 +339,34 @@ export default function Home() {
           />
           <span className="mx-1 h-4 w-px bg-[--border-bright]" />
           <button
-            onClick={() => window.open("/present", "_blank")}
-            className="group relative flex items-center gap-1.5 overflow-visible rounded-md bg-emerald-500 px-4 py-1.5 text-sm font-medium text-black shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:bg-transparent hover:text-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] active:scale-95"
+            onClick={() => { if (!presentationIsBlocked) openPresentation("/present"); }}
+            aria-disabled={presentationIsBlocked}
+            className={`group relative flex items-center gap-1.5 overflow-visible rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-300 ${presentationIsBlocked ? "cursor-not-allowed bg-emerald-500/20 text-emerald-200/60 shadow-none" : "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 hover:bg-transparent hover:text-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] active:scale-95"}`}
+            title={presentationIsBlocked ? presentationBlockedMessage : "Present"}
           >
             <PlayIcon className="h-3.5 w-3.5" /> Present
-            {/* Star 1 */}
-            <div className="pointer-events-none absolute left-[20%] top-[20%] z-[-1] w-[14px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-1000 ease-[cubic-bezier(0.05,0.83,0.43,0.96)] group-hover:left-[-10%] group-hover:top-[-40%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
-              <Star />
-            </div>
-            {/* Star 2 */}
-            <div className="pointer-events-none absolute left-[45%] top-[45%] z-[-1] w-[10px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[15%] group-hover:top-[-15%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
-              <Star />
-            </div>
-            {/* Star 3 */}
-            <div className="pointer-events-none absolute left-[40%] top-[40%] z-[-1] w-[5px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[30%] group-hover:top-[120%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
-              <Star />
-            </div>
-            {/* Star 4 */}
-            <div className="pointer-events-none absolute left-[40%] top-[20%] z-[-1] w-[6px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-800 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[85%] group-hover:top-[-20%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
-              <Star />
-            </div>
-            {/* Star 5 */}
-            <div className="pointer-events-none absolute left-[45%] top-[25%] z-[-1] w-[10px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-600 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[100%] group-hover:top-[30%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
-              <Star />
-            </div>
-            {/* Star 6 */}
-            <div className="pointer-events-none absolute left-[50%] top-[5%] z-[-1] w-[4px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-800 ease-in-out group-hover:left-[70%] group-hover:top-[-30%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
-              <Star />
-            </div>
+            {!presentationIsBlocked && (
+              <>
+                <div className="pointer-events-none absolute left-[20%] top-[20%] z-[-1] w-[14px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-1000 ease-[cubic-bezier(0.05,0.83,0.43,0.96)] group-hover:left-[-10%] group-hover:top-[-40%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+                  <Star />
+                </div>
+                <div className="pointer-events-none absolute left-[45%] top-[45%] z-[-1] w-[10px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[15%] group-hover:top-[-15%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+                  <Star />
+                </div>
+                <div className="pointer-events-none absolute left-[40%] top-[40%] z-[-1] w-[5px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[30%] group-hover:top-[120%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+                  <Star />
+                </div>
+                <div className="pointer-events-none absolute left-[40%] top-[20%] z-[-1] w-[6px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-800 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[85%] group-hover:top-[-20%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+                  <Star />
+                </div>
+                <div className="pointer-events-none absolute left-[45%] top-[25%] z-[-1] w-[10px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-600 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:left-[100%] group-hover:top-[30%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+                  <Star />
+                </div>
+                <div className="pointer-events-none absolute left-[50%] top-[5%] z-[-1] w-[4px] opacity-0 drop-shadow-[0_0_0_rgba(52,211,153,0)] transition-all duration-800 ease-in-out group-hover:left-[70%] group-hover:top-[-30%] group-hover:z-[2] group-hover:opacity-100 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]">
+                  <Star />
+                </div>
+              </>
+            )}
           </button>
           <UserMenu />
         </div>
@@ -321,6 +417,14 @@ export default function Home() {
           </Panel>
         </PanelGroup>
       </div>
+
+      <LearnDrawer
+        open={learnOpen}
+        onClose={() => setLearnOpen(false)}
+        onCreateTutorial={handleCreateTutorial}
+        onCreateTemplate={handleCreateTemplate}
+        onOfflineExport={handleOfflineExport}
+      />
     </div>
   );
 }
