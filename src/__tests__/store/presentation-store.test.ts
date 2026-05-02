@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { usePresentationStore } from "@/store/presentation-store";
+import { MAX_PRESENTATIONS } from "@/lib/validation";
 
 // Mock fetch for saveToServer / loadFromServer
 const mockFetch = vi.fn();
@@ -157,6 +158,70 @@ describe("presentation store", () => {
       const state = usePresentationStore.getState();
       expect(state.presentations).toHaveLength(1);
       expect(state.activePresentationId).toBeTruthy();
+    });
+  });
+
+  describe("presentation limits", () => {
+    it("does not import beyond the max presentation count", () => {
+      const presentations = Array.from({ length: MAX_PRESENTATIONS }, (_, index) => ({
+        id: `pres-${index}`,
+        name: `Presentation ${index}`,
+        slides: [
+          {
+            id: `slide-${index}`,
+            type: "code" as const,
+            title: "Slide",
+            code: "const x = 1;",
+            language: "typescript",
+          },
+        ],
+        activeSlideIndex: 0,
+      }));
+
+      usePresentationStore.setState({ presentations, activePresentationId: presentations[0].id });
+
+      const added = usePresentationStore.getState().importPresentation({
+        id: "overflow",
+        name: "Overflow",
+        slides: [
+          {
+            id: "overflow-slide",
+            type: "code",
+            title: "Overflow",
+            code: "const y = 2;",
+            language: "typescript",
+          },
+        ],
+        activeSlideIndex: 0,
+      });
+
+      expect(added).toBe(false);
+      expect(usePresentationStore.getState().presentations).toHaveLength(MAX_PRESENTATIONS);
+    });
+
+    it("deletes all presentations and leaves one blank fallback", () => {
+      usePresentationStore.getState().importPresentation({
+        id: "pres-2",
+        name: "Second",
+        slides: [
+          {
+            id: "slide-2",
+            type: "content",
+            title: "Second",
+            body: "Body",
+            imageDataUrl: null,
+            fontSize: 32,
+          },
+        ],
+        activeSlideIndex: 0,
+      });
+
+      usePresentationStore.getState().deleteAllPresentations();
+      const state = usePresentationStore.getState();
+
+      expect(state.presentations).toHaveLength(1);
+      expect(state.activePresentationId).toBe(state.presentations[0].id);
+      expect(state.presentations[0].name).toBe("Untitled Presentation");
     });
   });
 

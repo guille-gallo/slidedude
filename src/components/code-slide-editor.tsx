@@ -175,12 +175,12 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
         {/* Line numbers gutter */}
         <div
           ref={gutterRef}
-          className="absolute inset-y-0 left-0 z-10 w-10 overflow-hidden border-r border-white/[0.06] bg-[#0a0a0a] py-3"
+          className="shiki-overlay-gutter absolute inset-y-0 left-0 z-10 w-10 overflow-hidden border-r border-white/[0.06] bg-[#0a0a0a] py-3"
         >
           {Array.from({ length: limit.lineCount }, (_, i) => (
             <div
               key={i}
-              className="block w-full pr-2 text-right font-mono text-sm leading-relaxed text-zinc-700"
+              className="shiki-overlay-line block w-full pr-2 text-right text-zinc-700"
             >
               {i + 1}
             </div>
@@ -190,7 +190,7 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
         <div
           ref={highlightRef}
           aria-hidden
-          className="shiki-overlay-editor pointer-events-none absolute inset-0 overflow-hidden py-3 pl-12 pr-4 font-mono text-sm leading-relaxed"
+          className="shiki-overlay-editor pointer-events-none absolute inset-0 overflow-hidden py-3 pl-12 pr-4"
         >
           <ShikiCodeBlock
             code={slide.code}
@@ -206,7 +206,7 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
           onKeyDown={handleKeyDown}
           onScroll={handleScroll}
           spellCheck={false}
-          className="absolute inset-0 resize-none bg-transparent py-3 pl-12 pr-4 font-mono text-sm leading-relaxed text-transparent caret-emerald-400 outline-none selection:bg-emerald-500/15"
+          className="shiki-overlay-textarea absolute inset-0 resize-none bg-transparent py-3 pl-12 pr-4 text-transparent caret-emerald-400 outline-none selection:bg-emerald-500/15"
           placeholder="Paste your code here…"
         />
       </div>

@@ -3,6 +3,7 @@ import { persist, type PersistStorage, type StorageValue } from "zustand/middlew
 import type { Presentation, Slide, CodeSlide, ContentSlide, MermaidSlide } from "@/types";
 import { generateId } from "@/utils/id";
 import { SAVE_DEBOUNCE_MS } from "@/lib/constants";
+import { MAX_PRESENTATIONS } from "@/lib/validation";
 
 export type SlideType = Slide["type"];
 
@@ -109,11 +110,12 @@ interface PresentationState {
   getActiveSlide: () => Slide | undefined;
 
   // Presentation actions
-  addPresentation: () => void;
+  addPresentation: () => boolean;
   deletePresentation: (id: string) => void;
+  deleteAllPresentations: () => void;
   renamePresentation: (id: string, name: string) => void;
   setActivePresentation: (id: string) => void;
-  importPresentation: (presentation: Presentation) => void;
+  importPresentation: (presentation: Presentation) => boolean;
 
   // Slide actions
   addSlide: (type: SlideType) => void;
@@ -158,12 +160,15 @@ export const usePresentationStore = create<PresentationState>()(
         },
 
         addPresentation: () => {
+          if (get().presentations.length >= MAX_PRESENTATIONS) return false;
+
           const newPres = createDefaultPresentation();
           set((s) => ({
             presentations: [...s.presentations, newPres],
             activePresentationId: newPres.id,
           }));
           scheduleSave();
+          return true;
         },
 
         deletePresentation: (id) => {
@@ -185,6 +190,15 @@ export const usePresentationStore = create<PresentationState>()(
           scheduleSave();
         },
 
+        deleteAllPresentations: () => {
+          const fallback = createDefaultPresentation();
+          set({
+            presentations: [fallback],
+            activePresentationId: fallback.id,
+          });
+          scheduleSave();
+        },
+
         renamePresentation: (id, name) => {
           set((s) => ({
             presentations: s.presentations.map((p) =>
@@ -200,11 +214,14 @@ export const usePresentationStore = create<PresentationState>()(
         },
 
         importPresentation: (presentation) => {
+          if (get().presentations.length >= MAX_PRESENTATIONS) return false;
+
           set((s) => ({
             presentations: [...s.presentations, presentation],
             activePresentationId: presentation.id,
           }));
           scheduleSave();
+          return true;
         },
 
         addSlide: (type) => {
