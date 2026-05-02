@@ -49,6 +49,29 @@ export const test = base.extend<Fixtures>({
       } catch {
         // ignore storage failures (private mode etc.)
       }
+
+      // Hide the Next.js dev error/warning overlay portal. In CI, transient
+      // hydration warnings or fast-refresh notices render a `<nextjs-portal>`
+      // that absorbs pointer events and breaks clicks. Tests should not gate
+      // on dev-only UI; if a test needs to assert an error state it can do so
+      // via the app's own surfaces.
+      const hideOverlay = () => {
+        const id = "__e2e_hide_next_overlay";
+        if (document.getElementById(id)) return;
+        const style = document.createElement("style");
+        style.id = id;
+        style.textContent = "nextjs-portal{display:none!important}";
+        (document.head || document.documentElement).appendChild(style);
+      };
+      if (document.head) hideOverlay();
+      else {
+        new MutationObserver((_, obs) => {
+          if (document.head) {
+            hideOverlay();
+            obs.disconnect();
+          }
+        }).observe(document.documentElement, { childList: true, subtree: true });
+      }
     });
 
     await page.route("**/api/presentations", async (route: Route) => {
