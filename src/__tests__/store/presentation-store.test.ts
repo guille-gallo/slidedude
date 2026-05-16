@@ -209,7 +209,7 @@ describe("presentation store", () => {
             type: "content",
             title: "Second",
             body: "Body",
-            imageDataUrl: null,
+            imageDataUrls: [],
             fontSize: 32,
           },
         ],
@@ -329,6 +329,36 @@ describe("presentation store", () => {
       expect(state.presentations[0].name).toBe("Test Presentation");
       expect(warnSpy).toHaveBeenCalled();
       warnSpy.mockRestore();
+    });
+
+    it("migrates legacy imageDataUrl when loading from server", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          presentations: [
+            {
+              id: "p-legacy",
+              name: "Legacy",
+              activeSlideIndex: 0,
+              slides: [
+                {
+                  id: "s1",
+                  type: "content",
+                  title: "Old",
+                  body: "Body",
+                  fontSize: 32,
+                  imageDataUrl: "data:image/webp;base64,abc",
+                },
+              ],
+            },
+          ],
+        }),
+      });
+      await usePresentationStore.getState().loadFromServer();
+      const pres = usePresentationStore.getState().presentations[0];
+      const slide = pres.slides[0] as import("@/types").ContentSlide;
+      expect(slide.imageDataUrls).toEqual(["data:image/webp;base64,abc"]);
+      expect("imageDataUrl" in slide).toBe(false);
     });
   });
 });

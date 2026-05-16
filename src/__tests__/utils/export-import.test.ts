@@ -24,7 +24,7 @@ const validContentSlide = {
   type: "content",
   title: "Intro",
   body: "Welcome",
-  imageDataUrl: null,
+  imageDataUrls: [],
   fontSize: 32,
 };
 
@@ -115,9 +115,50 @@ describe("importPresentation", () => {
     const json = JSON.stringify({
       name: "Test",
       slides: [
-        { id: "x", type: "content", title: "T", body: "B", imageDataUrl: null },
+        { id: "x", type: "content", title: "T", body: "B", imageDataUrls: [] },
       ],
     });
     expect(importPresentation(json)).toBeNull();
+  });
+
+  it("migrates legacy imageDataUrl string to imageDataUrls on import", () => {
+    const json = JSON.stringify({
+      name: "Legacy Deck",
+      slides: [
+        {
+          id: "s1",
+          type: "content",
+          title: "Old",
+          body: "Body",
+          fontSize: 32,
+          imageDataUrl: "data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADQAQCdASoBAAEAAkA4JYgCdAEO/gHOAAA=",
+        },
+      ],
+    });
+    const result = importPresentation(json);
+    expect(result).not.toBeNull();
+    const slide = result!.slides[0] as import("@/types").ContentSlide;
+    expect(slide.imageDataUrls).toHaveLength(1);
+    expect("imageDataUrl" in slide).toBe(false);
+  });
+
+  it("migrates legacy imageDataUrl: null to empty array on import", () => {
+    const json = JSON.stringify({
+      name: "Legacy Deck",
+      slides: [
+        {
+          id: "s1",
+          type: "content",
+          title: "Old",
+          body: "Body",
+          fontSize: 32,
+          imageDataUrl: null,
+        },
+      ],
+    });
+    const result = importPresentation(json);
+    expect(result).not.toBeNull();
+    const slide = result!.slides[0] as import("@/types").ContentSlide;
+    expect(slide.imageDataUrls).toEqual([]);
   });
 });

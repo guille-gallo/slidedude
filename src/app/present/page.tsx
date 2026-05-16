@@ -6,8 +6,8 @@ import { usePresentationStore } from "@/store/presentation-store";
 import { useHighlighter } from "@/hooks/use-highlighter";
 import { ShikiMagicMove } from "shiki-magic-move/react";
 import "shiki-magic-move/dist/style.css";
-import Image from "next/image";
 import { MermaidDiagram } from "@/components/mermaid-diagram";
+import { ContentImageGrid } from "@/components/content-image-grid";
 import { ShikiCodeBlock } from "@/components/shiki-code-block";
 import { groupSections, findSection } from "@/lib/sections";
 import { CODE_PRESENTATION_MAX_LINES, getCodePresentationBlockers } from "@/lib/code-limits";
@@ -156,8 +156,8 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
         </div>
       )}
 
-      <div className="flex flex-1 min-h-0 items-center justify-center overflow-hidden p-8">
-        <div className="flex w-full max-w-5xl flex-col items-center gap-6 min-h-0 max-h-full">
+      <div className="flex flex-1 min-h-0 items-stretch justify-center overflow-hidden p-8">
+        <div className="flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-6 min-h-0">
           {currentSlide.type === "code" ? (
             <>
               {currentSlide.title && (
@@ -211,20 +211,11 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
                 </h1>
               )}
               {currentSlide.body && (
-                <p className="max-w-2xl whitespace-pre-wrap text-center text-xl text-zinc-300">
+                <p className="max-w-2xl whitespace-pre-wrap text-center text-xl text-zinc-300 shrink-0">
                   {currentSlide.body}
                 </p>
               )}
-              {currentSlide.imageDataUrl && (
-                <Image
-                  src={currentSlide.imageDataUrl}
-                  alt=""
-                  width={800}
-                  height={600}
-                  className="max-h-[60vh] rounded-xl object-contain shadow-2xl"
-                  unoptimized
-                />
-              )}
+              <ContentImageGrid images={currentSlide.imageDataUrls} />
             </>
           )}
         </div>
@@ -475,10 +466,10 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
                 </h2>
               )}
               {slide.body && <p className="whitespace-pre-wrap text-xl text-zinc-300">{slide.body}</p>}
-              {slide.imageDataUrl && (
+              {slide.imageDataUrls.length > 0 && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
-                  src={slide.imageDataUrl}
+                  src={slide.imageDataUrls[0]}
                   alt=""
                   className="max-h-[400px] rounded-lg object-contain"
                 />

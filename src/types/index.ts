@@ -13,7 +13,7 @@ export interface ContentSlide {
   type: "content";
   title: string;
   body: string;
-  imageDataUrl: string | null;
+  imageDataUrls: string[];
   fontSize: number;
   notes?: string;
   section?: string;

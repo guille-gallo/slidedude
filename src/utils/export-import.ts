@@ -1,6 +1,6 @@
 import type { Presentation } from "@/types";
 import { generateId } from "@/utils/id";
-import { isValidSlide } from "@/lib/validation";
+import { isValidSlide, normalizeSlide } from "@/lib/validation";
 
 export function exportPresentation(presentation: Presentation): void {
   const data = JSON.stringify(presentation, null, 2);
@@ -32,9 +32,10 @@ export function importPresentation(json: string): Presentation | null {
       return null;
     }
 
-    // Regenerate all IDs to avoid collisions
+    // Normalize each slide (migrates legacy imageDataUrl → imageDataUrls)
+    // then regenerate all IDs to avoid collisions
     const slides = (data.slides as unknown[]).map((s) => ({
-      ...(s as object),
+      ...normalizeSlide(s as Record<string, unknown>),
       id: generateId(),
     }));
 

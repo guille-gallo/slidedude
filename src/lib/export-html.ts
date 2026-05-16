@@ -263,7 +263,26 @@ html,body{height:100%;background:#000;color:#e4e4e7;font-family:ui-sans-serif,sy
 /* Content view */
 #content-view{display:none;flex-direction:column;align-items:center;gap:24px;width:100%;text-align:center;}
 #content-body{max-width:768px;white-space:pre-wrap;font-size:1.25rem;color:#a1a1aa;line-height:1.7;}
-#content-image{max-height:60vh;max-width:100%;border-radius:12px;object-fit:contain;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);}
+#content-images{display:none;width:100%;flex:1 1 0;min-height:0;gap:8px;grid-auto-rows:1fr;}
+#content-images.has-images{display:grid;}
+#content-images.cols-1{grid-template-columns:1fr;}
+#content-images.cols-2{grid-template-columns:1fr 1fr;}
+#content-images.cols-3{grid-template-columns:1fr 1fr 1fr;}
+#content-images.cols-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.content-img-cell{position:relative;width:100%;overflow:hidden;border-radius:8px;cursor:zoom-in;border:none;background:transparent;padding:0;}
+.content-img-cell img{width:100%;height:100%;object-fit:contain;}
+/* Lightbox */
+#image-lightbox{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.95);align-items:center;justify-content:center;}
+#image-lightbox.visible{display:flex;}
+#image-lightbox .lb-img-wrap{position:relative;width:95vw;height:95vh;}
+#image-lightbox .lb-img-wrap img{width:100%;height:100%;object-fit:contain;}
+#image-lightbox .lb-close{position:absolute;top:16px;right:16px;z-index:10;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#image-lightbox .lb-close:hover{background:rgba(255,255,255,.2);}
+#image-lightbox .lb-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:10;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#image-lightbox .lb-arrow:hover{background:rgba(255,255,255,.2);}
+#image-lightbox .lb-prev{left:16px;}
+#image-lightbox .lb-next{right:16px;}
+#image-lightbox .lb-counter{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.1);border-radius:16px;padding:4px 12px;font-size:.875rem;color:rgba(255,255,255,.7);}
 /* Mermaid view */
 #mermaid-view{display:none;flex-direction:column;align-items:center;gap:24px;width:100%;}
 #mermaid-container{width:100%;min-height:300px;max-height:70vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
@@ -296,6 +315,8 @@ html,body{height:100%;background:#000;color:#e4e4e7;font-family:ui-sans-serif,sy
 .type-mermaid{background:rgba(56,189,248,.1);color:rgb(56,189,248);}
 .overview-thumb-title{font-size:.875rem;font-weight:500;color:#e4e4e7;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
 .overview-thumb-section{font-family:ui-monospace,monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:#52525b;}
+/* Content body shrink-0 so grid gets remaining space */
+#content-body{flex-shrink:0;}
 `;
 
 // ---------------------------------------------------------------------------
@@ -329,7 +350,7 @@ ${PRESENTATION_CSS}
     <div id="content-view">
       <h1 class="slide-title" id="content-title"></h1>
       <p id="content-body"></p>
-      <img id="content-image" alt="" style="display:none;">
+      <div id="content-images"></div>
     </div>
     <div id="mermaid-view">
       <h1 class="slide-title" id="mermaid-title"></h1>
@@ -352,6 +373,13 @@ ${PRESENTATION_CSS}
     <span class="overview-hint">Esc or G to close</span>
   </div>
   <div class="overview-grid" id="overview-grid"></div>
+</div>
+<div id="image-lightbox" role="dialog" aria-modal="true" aria-hidden="true">
+  <button class="lb-close" aria-label="Close image zoom">&#x2715;</button>
+  <button class="lb-arrow lb-prev" aria-label="Previous image">&#8592;</button>
+  <div class="lb-img-wrap"><img id="image-lightbox-img" alt=""></div>
+  <button class="lb-arrow lb-next" aria-label="Next image">&#8594;</button>
+  <span class="lb-counter" id="lb-counter"></span>
 </div>
 <script>
 ${MAGIC_MOVE_RENDERER_JS}
@@ -391,7 +419,48 @@ const mermaidView = document.getElementById('mermaid-view');
 const codeTitle   = document.getElementById('code-title');
 const contentTitle = document.getElementById('content-title');
 const contentBody  = document.getElementById('content-body');
-const contentImage = document.getElementById('content-image');
+const contentImages = document.getElementById('content-images');
+const lightbox      = document.getElementById('image-lightbox');
+const lightboxImg   = document.getElementById('image-lightbox-img');
+const lbCounter     = document.getElementById('lb-counter');
+const lbClose       = lightbox.querySelector('.lb-close');
+const lbPrev        = lightbox.querySelector('.lb-prev');
+const lbNext        = lightbox.querySelector('.lb-next');
+let lbImages = [];  // images array for currently-shown slide
+let lbIndex = 0;
+
+function openLightbox(imgs, idx) {
+  lbImages = imgs;
+  showLightboxAt(idx);
+  lightbox.classList.add('visible');
+  lightbox.setAttribute('aria-hidden', 'false');
+  lbPrev.style.display = imgs.length > 1 ? '' : 'none';
+  lbNext.style.display = imgs.length > 1 ? '' : 'none';
+  lbCounter.style.display = imgs.length > 1 ? '' : 'none';
+}
+function showLightboxAt(idx) {
+  lbIndex = (idx + lbImages.length) % lbImages.length;
+  lightboxImg.src = lbImages[lbIndex];
+  lightboxImg.alt = 'Slide image ' + (lbIndex + 1);
+  if (lbImages.length > 1) lbCounter.textContent = (lbIndex + 1) + ' / ' + lbImages.length;
+}
+function closeLightbox() {
+  lightbox.classList.remove('visible');
+  lightbox.setAttribute('aria-hidden', 'true');
+  lightboxImg.src = '';
+  lbImages = [];
+}
+lbClose.addEventListener('click', closeLightbox);
+lbPrev.addEventListener('click', function(e) { e.stopPropagation(); showLightboxAt(lbIndex - 1); });
+lbNext.addEventListener('click', function(e) { e.stopPropagation(); showLightboxAt(lbIndex + 1); });
+lightbox.addEventListener('click', function(e) { if (e.target === lightbox) closeLightbox(); });
+// Capture-phase keydown: intercept Escape/arrows before slide-nav handler
+window.addEventListener('keydown', function(e) {
+  if (!lightbox.classList.contains('visible')) return;
+  if (e.key === 'Escape') { e.stopPropagation(); closeLightbox(); }
+  else if (e.key === 'ArrowLeft') { e.stopPropagation(); showLightboxAt(lbIndex - 1); }
+  else if (e.key === 'ArrowRight') { e.stopPropagation(); showLightboxAt(lbIndex + 1); }
+}, true);
 const mermaidTitle = document.getElementById('mermaid-title');
 const mermaidContainer = document.getElementById('mermaid-container');
 const progressBar  = document.getElementById('progress-bar');
@@ -529,12 +598,30 @@ function showSlide(newIndex, animate) {
     contentTitle.style.display = slide.title ? '' : 'none';
     contentBody.textContent = slide.body || '';
     contentBody.style.display = slide.body ? '' : 'none';
-    if (slide.imageDataUrl) {
-      contentImage.src = slide.imageDataUrl;
-      contentImage.style.display = '';
-    } else {
-      contentImage.src = '';
-      contentImage.style.display = 'none';
+    // Legacy shim: old exports may have imageDataUrl instead of imageDataUrls
+    const imgs = Array.isArray(slide.imageDataUrls)
+      ? slide.imageDataUrls
+      : (slide.imageDataUrl ? [slide.imageDataUrl] : []);
+    contentImages.innerHTML = '';
+    contentImages.className = '';
+    if (imgs.length > 0) {
+      var n = imgs.length;
+      var cols = n === 1 ? 1 : n === 2 ? 2 : n === 3 ? 3 : n === 4 ? 2 : n <= 6 ? 3 : 4;
+      contentImages.className = 'has-images cols-' + cols;
+      imgs.forEach(function(src, i) {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'content-img-cell';
+        cell.setAttribute('aria-label', 'Zoom image ' + (i + 1));
+        cell.addEventListener('click', (function(capturedSrc, capturedIdx) {
+          return function() { openLightbox(imgs, capturedIdx); };
+        })(src, i));
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = 'Slide image ' + (i + 1);
+        cell.appendChild(img);
+        contentImages.appendChild(cell);
+      });
     }
 
   } else if (slide.type === 'mermaid') {

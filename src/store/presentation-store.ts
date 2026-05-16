@@ -3,7 +3,7 @@ import { persist, type PersistStorage, type StorageValue } from "zustand/middlew
 import type { Presentation, Slide, CodeSlide, ContentSlide, MermaidSlide } from "@/types";
 import { generateId } from "@/utils/id";
 import { SAVE_DEBOUNCE_MS } from "@/lib/constants";
-import { MAX_PRESENTATIONS } from "@/lib/validation";
+import { MAX_PRESENTATIONS, normalizeSlide } from "@/lib/validation";
 
 export type SlideType = Slide["type"];
 
@@ -23,7 +23,7 @@ function createDefaultContentSlide(): ContentSlide {
     type: "content",
     title: "Untitled",
     body: "",
-    imageDataUrl: null,
+    imageDataUrls: [],
     fontSize: 32,
   };
 }
@@ -336,12 +336,16 @@ export const usePresentationStore = create<PresentationState>()(
             if (!res.ok) return;
             const { presentations } = await res.json();
             if (Array.isArray(presentations) && presentations.length > 0) {
+              const normalized = presentations.map((p: Presentation) => ({
+                ...p,
+                slides: p.slides.map((sl) => normalizeSlide(sl as unknown as Record<string, unknown>) as unknown as Slide),
+              }));
               set((s) => ({
-                presentations,
+                presentations: normalized,
                 activePresentationId: s.activePresentationId
-                  && presentations.some((p: Presentation) => p.id === s.activePresentationId)
+                  && normalized.some((p: Presentation) => p.id === s.activePresentationId)
                   ? s.activePresentationId
-                  : presentations[0].id,
+                  : normalized[0].id,
                 syncStatus: "saved",
               }));
             }
@@ -394,6 +398,15 @@ export const usePresentationStore = create<PresentationState>()(
         presentations: state.presentations,
         activePresentationId: state.activePresentationId,
       }),
+      onRehydrateStorage: () => (rehydratedState) => {
+        // Migrate any presentation that was saved with the legacy
+        // imageDataUrl field before the imageDataUrls array was introduced.
+        if (!rehydratedState) return;
+        rehydratedState.presentations = rehydratedState.presentations.map((p) => ({
+          ...p,
+          slides: p.slides.map((sl) => normalizeSlide(sl as unknown as Record<string, unknown>) as unknown as Slide),
+        }));
+      },
     }
   )
 );

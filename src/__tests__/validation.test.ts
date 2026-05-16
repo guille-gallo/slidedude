@@ -3,7 +3,13 @@ import {
   isValidSlide,
   isValidPresentation,
   isValidPresentations,
+  isValidImageDataUrl,
+  normalizeSlide,
 } from "@/lib/validation";
+import { MAX_IMAGES_PER_SLIDE } from "@/lib/constants";
+
+// Smallest valid WebP as a data URL (1x1 transparent, well-formed base64)
+const VALID_WEBP = "data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADQAQCdASoBAAEAAkA4JYgCdAEO/gHOAAA=";
 
 describe("isValidSlide", () => {
   it("accepts a valid code slide", () => {
@@ -18,7 +24,111 @@ describe("isValidSlide", () => {
     ).toBe(true);
   });
 
-  it("accepts a valid content slide", () => {
+  it("accepts a valid content slide with no images", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 32,
+        imageDataUrls: [],
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts a content slide with a valid image", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 32,
+        imageDataUrls: [VALID_WEBP],
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts a content slide with up to MAX_IMAGES_PER_SLIDE images", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 32,
+        imageDataUrls: Array(MAX_IMAGES_PER_SLIDE).fill(VALID_WEBP),
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects a content slide with more than MAX_IMAGES_PER_SLIDE images", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 32,
+        imageDataUrls: Array(MAX_IMAGES_PER_SLIDE + 1).fill(VALID_WEBP),
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects a content slide with a non-data-URL image", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 32,
+        imageDataUrls: ["https://example.com/img.webp"],
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects a content slide with a javascript: image URL", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 32,
+        imageDataUrls: ["javascript:alert(1)"],
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects a content slide with an SVG data URL", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 32,
+        imageDataUrls: ["data:image/svg+xml;base64,PHN2Zy8+"],
+      }),
+    ).toBe(false);
+  });
+
+  it("migrates legacy imageDataUrl on the fly", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "content",
+        title: "T",
+        body: "B",
+        fontSize: 32,
+        imageDataUrl: VALID_WEBP,
+      }),
+    ).toBe(true);
+  });
+
+  it("migrates legacy imageDataUrl: null on the fly", () => {
     expect(
       isValidSlide({
         id: "1",
@@ -268,5 +378,65 @@ describe("bounds checking", () => {
         activeSlideIndex: 0,
       }),
     ).toBe(false);
+  });
+});
+
+describe("isValidImageDataUrl", () => {
+  it("accepts a valid webp data URL", () => {
+    expect(isValidImageDataUrl(VALID_WEBP)).toBe(true);
+  });
+
+  it("accepts a valid png data URL", () => {
+    // Minimal 1×1 PNG base64
+    expect(isValidImageDataUrl("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==")).toBe(true);
+  });
+
+  it("rejects an SVG data URL", () => {
+    expect(isValidImageDataUrl("data:image/svg+xml;base64,PHN2Zy8+")).toBe(false);
+  });
+
+  it("rejects a javascript: URL", () => {
+    expect(isValidImageDataUrl("javascript:alert(1)")).toBe(false);
+  });
+
+  it("rejects an http URL", () => {
+    expect(isValidImageDataUrl("https://example.com/img.webp")).toBe(false);
+  });
+
+  it("rejects a non-string", () => {
+    expect(isValidImageDataUrl(42)).toBe(false);
+    expect(isValidImageDataUrl(null)).toBe(false);
+  });
+
+  it("rejects a data URL exceeding MAX_IMAGE_BYTES", () => {
+    // Generate a base64 string whose decoded size exceeds 600 KB
+    const oversize = "A".repeat(Math.ceil((600 * 1024 + 1) * 4 / 3));
+    expect(isValidImageDataUrl(`data:image/webp;base64,${oversize}`)).toBe(false);
+  });
+});
+
+describe("normalizeSlide", () => {
+  it("passes through a non-content slide unchanged", () => {
+    const raw = { type: "code", code: "x", language: "ts" };
+    expect(normalizeSlide(raw)).toBe(raw);
+  });
+
+  it("passes through a content slide that already has imageDataUrls", () => {
+    const raw = { type: "content", imageDataUrls: [VALID_WEBP] };
+    expect(normalizeSlide(raw)).toBe(raw);
+  });
+
+  it("migrates legacy imageDataUrl string to imageDataUrls array", () => {
+    const raw = { type: "content", imageDataUrl: VALID_WEBP };
+    const result = normalizeSlide(raw);
+    expect(result.imageDataUrls).toEqual([VALID_WEBP]);
+    expect("imageDataUrl" in result).toBe(false);
+  });
+
+  it("migrates legacy imageDataUrl: null to empty array", () => {
+    const raw = { type: "content", imageDataUrl: null };
+    const result = normalizeSlide(raw);
+    expect(result.imageDataUrls).toEqual([]);
+    expect("imageDataUrl" in result).toBe(false);
   });
 });
