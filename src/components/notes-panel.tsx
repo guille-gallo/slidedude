@@ -57,12 +57,6 @@ export function NotesPanel({
   const dragStateRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const isDraggingRef = useRef(false);
 
-  // Persist on storageKey change (edge case)
-  useEffect(() => {
-    const next = readStoredHeight(storageKey);
-    queueMicrotask(() => setHeight(next));
-  }, [storageKey]);
-
   // Clean up body style on unmount
   useEffect(() => {
     return () => {

@@ -1,14 +1,10 @@
 import "server-only";
-import { createElement } from "react";
 import { createHighlighter } from "shiki/bundle/web";
 import { codeToKeyedTokens, syncTokenKeys } from "shiki-magic-move/core";
 import type { KeyedTokensInfo } from "shiki-magic-move/types";
-import { renderToStaticMarkup } from "react-dom/server";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import type { Presentation, Slide } from "@/types";
 import { groupSections } from "@/lib/sections";
-import { slideMarkdownComponents } from "@/lib/slide-markdown-components";
+import { renderContentMarkdownHtml } from "@/lib/markdown-html";
 
 const LANGS = [
   "typescript",
@@ -92,13 +88,7 @@ async function buildExportData(presentation: Presentation): Promise<ExportData> 
   for (let i = 0; i < slides.length; i++) {
     const slide = slides[i];
     if (slide.type !== "content" || !slide.body) continue;
-    bodyHtml[i] = renderToStaticMarkup(
-      createElement(
-        ReactMarkdown,
-        { remarkPlugins: [remarkGfm], components: slideMarkdownComponents },
-        slide.body
-      )
-    );
+    bodyHtml[i] = renderContentMarkdownHtml(slide.body);
   }
 
   return {
