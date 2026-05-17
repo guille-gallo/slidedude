@@ -1,9 +1,14 @@
 import "server-only";
+import { createElement } from "react";
 import { createHighlighter } from "shiki/bundle/web";
 import { codeToKeyedTokens, syncTokenKeys } from "shiki-magic-move/core";
 import type { KeyedTokensInfo } from "shiki-magic-move/types";
+import { renderToStaticMarkup } from "react-dom/server";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Presentation, Slide } from "@/types";
 import { groupSections } from "@/lib/sections";
+import { slideMarkdownComponents } from "@/lib/slide-markdown-components";
 
 const LANGS = [
   "typescript",
@@ -48,6 +53,8 @@ interface ExportData {
   codeTokens: Record<number, KeyedTokensInfo>;
   /** Synced transition pairs for adjacent code-slide pairs. Key = "i_j". */
   transitions: Record<string, TransitionPair>;
+  /** Pre-rendered markdown HTML per content-slide index. */
+  bodyHtml: Record<number, string>;
 }
 
 async function buildExportData(presentation: Presentation): Promise<ExportData> {
@@ -80,11 +87,26 @@ async function buildExportData(presentation: Presentation): Promise<ExportData> 
     transitions[`${i}_${i + 1}`] = { from, to };
   }
 
+  // Pre-render markdown bodies for content slides.
+  const bodyHtml: Record<number, string> = {};
+  for (let i = 0; i < slides.length; i++) {
+    const slide = slides[i];
+    if (slide.type !== "content" || !slide.body) continue;
+    bodyHtml[i] = renderToStaticMarkup(
+      createElement(
+        ReactMarkdown,
+        { remarkPlugins: [remarkGfm], components: slideMarkdownComponents },
+        slide.body
+      )
+    );
+  }
+
   return {
     slides,
     sections: groupSections(slides),
     codeTokens,
     transitions,
+    bodyHtml,
   };
 }
 
@@ -263,6 +285,21 @@ html,body{height:100%;background:#000;color:#e4e4e7;font-family:ui-sans-serif,sy
 /* Content view */
 #content-view{display:none;flex-direction:column;align-items:center;gap:24px;width:100%;text-align:center;}
 #content-body{max-width:768px;white-space:pre-wrap;font-size:1.25rem;color:#a1a1aa;line-height:1.7;}
+#content-body.is-markdown{white-space:normal;}
+#content-body.is-markdown p{margin:0.5rem 0;}
+#content-body.is-markdown h1,#content-body.is-markdown h2,#content-body.is-markdown h3{color:#f4f4f5;margin:0.75rem 0 0.5rem;font-weight:700;}
+#content-body.is-markdown ul,#content-body.is-markdown ol{text-align:left;display:inline-block;margin:0.5rem 0;padding-left:1.5rem;}
+#content-body.is-markdown li{margin:0.25rem 0;}
+#content-body.is-markdown code{background:rgba(255,255,255,0.06);padding:0.1rem 0.35rem;border-radius:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.9em;color:#6ee7b7;}
+#content-body.is-markdown pre{text-align:left;background:rgba(0,0,0,0.4);padding:0.75rem;border-radius:6px;overflow:auto;margin:0.5rem 0;}
+#content-body.is-markdown pre code{background:transparent;padding:0;color:#e4e4e7;}
+#content-body.is-markdown blockquote{border-left:2px solid rgba(16,185,129,0.4);padding-left:0.75rem;font-style:italic;color:#a1a1aa;margin:0.5rem 0;text-align:left;}
+#content-body.is-markdown a{color:#34d399;text-decoration:underline;}
+#content-body.is-markdown table{display:inline-table;border-collapse:collapse;margin:0.75rem 0;border:1px solid rgba(255,255,255,0.1);border-radius:6px;overflow:hidden;}
+#content-body.is-markdown th,#content-body.is-markdown td{padding:0.5rem 0.75rem;border-bottom:1px solid rgba(255,255,255,0.08);text-align:left;}
+#content-body.is-markdown th{background:rgba(255,255,255,0.04);color:#e4e4e7;font-weight:600;}
+#content-body.is-markdown td{color:#d4d4d8;}
+#content-body.is-markdown hr{border:none;border-top:1px solid rgba(255,255,255,0.1);margin:0.75rem 0;}
 #content-images{display:none;width:100%;flex:1 1 0;min-height:0;gap:8px;grid-auto-rows:1fr;}
 #content-images.has-images{display:grid;}
 #content-images.cols-1{grid-template-columns:1fr;}
@@ -323,7 +360,7 @@ html,body{height:100%;background:#000;color:#e4e4e7;font-family:ui-sans-serif,sy
 // HTML template
 // ---------------------------------------------------------------------------
 function buildHtml(data: ExportData, presentationName: string): string {
-  const { slides, sections, codeTokens, transitions } = data;
+  const { slides, sections, codeTokens, transitions, bodyHtml } = data;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -349,7 +386,7 @@ ${PRESENTATION_CSS}
     </div>
     <div id="content-view">
       <h1 class="slide-title" id="content-title"></h1>
-      <p id="content-body"></p>
+      <div id="content-body"></div>
       <div id="content-images"></div>
     </div>
     <div id="mermaid-view">
@@ -388,6 +425,7 @@ const SLIDES = ${safeJson(slides)};
 const SECTIONS = ${safeJson(sections)};
 const CODE_TOKENS = ${safeJson(codeTokens)};
 const TRANSITIONS = ${safeJson(transitions)};
+const BODY_HTML = ${safeJson(bodyHtml)};
 
 // ---- State ----------------------------------------------------------------
 let currentIndex = 0;
@@ -596,8 +634,16 @@ function showSlide(newIndex, animate) {
   } else if (slide.type === 'content') {
     contentTitle.textContent = slide.title || '';
     contentTitle.style.display = slide.title ? '' : 'none';
-    contentBody.textContent = slide.body || '';
-    contentBody.style.display = slide.body ? '' : 'none';
+    const html = BODY_HTML[newIndex];
+    if (html) {
+      contentBody.innerHTML = html;
+      contentBody.classList.add('is-markdown');
+      contentBody.style.display = '';
+    } else {
+      contentBody.classList.remove('is-markdown');
+      contentBody.textContent = slide.body || '';
+      contentBody.style.display = slide.body ? '' : 'none';
+    }
     // Legacy shim: old exports may have imageDataUrl instead of imageDataUrls
     const imgs = Array.isArray(slide.imageDataUrls)
       ? slide.imageDataUrls

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { MermaidSlide } from "@/types";
 import { MermaidDiagram } from "./mermaid-diagram";
 import { Workflow, StickyNote } from "lucide-react";
+import { NotesPanel } from "@/components/notes-panel";
 
 interface MermaidSlideEditorProps {
   slide: MermaidSlide;
@@ -21,6 +22,7 @@ export function MermaidSlideEditor({ slide, onChange }: MermaidSlideEditorProps)
 
   return (
     <div className="flex h-full flex-col gap-4">
+      <div className="flex flex-1 min-h-0 flex-col gap-4">
       {/* Title + section row */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5 rounded-md bg-sky-500/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-sky-400">
@@ -56,6 +58,8 @@ export function MermaidSlideEditor({ slide, onChange }: MermaidSlideEditorProps)
         </div>
       </div>
 
+      </div>
+
       {/* Notes */}
       <div className="shrink-0">
         <button
@@ -68,16 +72,13 @@ export function MermaidSlideEditor({ slide, onChange }: MermaidSlideEditorProps)
           <StickyNote className="h-3.5 w-3.5" />
           Presenter Notes
         </button>
-        {showNotes && (
-          <textarea
-            value={slide.notes ?? ""}
-            onChange={(e) => onChange({ notes: e.target.value || undefined })}
-            className="input-glow mt-2 w-full resize-none rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
-            rows={3}
-            placeholder="Speaker notes…"
-          />
-        )}
       </div>
+      <NotesPanel
+        open={showNotes}
+        value={slide.notes ?? ""}
+        onChange={(v) => onChange({ notes: v })}
+        placeholder="Speaker notes…"
+      />
     </div>
   );
 }

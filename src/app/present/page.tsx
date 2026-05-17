@@ -9,6 +9,7 @@ import "shiki-magic-move/dist/style.css";
 import { MermaidDiagram } from "@/components/mermaid-diagram";
 import { ContentImageGrid } from "@/components/content-image-grid";
 import { ShikiCodeBlock } from "@/components/shiki-code-block";
+import { SlideMarkdown } from "@/components/slide-markdown";
 import { groupSections, findSection } from "@/lib/sections";
 import { CODE_PRESENTATION_MAX_LINES, getCodePresentationBlockers } from "@/lib/code-limits";
 
@@ -211,9 +212,10 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
                 </h1>
               )}
               {currentSlide.body && (
-                <p className="max-w-2xl whitespace-pre-wrap text-center text-xl text-zinc-300 shrink-0">
-                  {currentSlide.body}
-                </p>
+                <SlideMarkdown
+                  source={currentSlide.body}
+                  className="max-w-3xl shrink-0 text-center text-xl text-zinc-300"
+                />
               )}
               <ContentImageGrid images={currentSlide.imageDataUrls} />
             </>
@@ -465,7 +467,9 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
                   {slide.title}
                 </h2>
               )}
-              {slide.body && <p className="whitespace-pre-wrap text-xl text-zinc-300">{slide.body}</p>}
+              {slide.body && (
+                <SlideMarkdown source={slide.body} className="text-xl text-zinc-300" />
+              )}
               {slide.imageDataUrls.length > 0 && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img

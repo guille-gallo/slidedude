@@ -11,6 +11,7 @@ import {
 import { ShikiCodeBlock } from "./shiki-code-block";
 
 import { AlertTriangle, Code2, ChevronDown, StickyNote } from "lucide-react";
+import { NotesPanel } from "@/components/notes-panel";
 
 interface CodeSlideEditorProps {
   slide: CodeSlide;
@@ -117,6 +118,7 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
 
   return (
     <div className="flex h-full flex-col gap-4">
+      <div className="flex flex-1 min-h-0 flex-col gap-4">
       {/* Controls bar */}
       <div className="flex items-center gap-3">
         <input
@@ -211,6 +213,8 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
         />
       </div>
 
+      </div>
+
       {/* Notes toggle */}
       <div className="shrink-0">
         <button
@@ -223,16 +227,13 @@ export function CodeSlideEditor({ slide, onChange }: CodeSlideEditorProps) {
           <StickyNote className="h-3.5 w-3.5" />
           Presenter Notes
         </button>
-        {showNotes && (
-          <textarea
-            value={slide.notes ?? ""}
-            onChange={(e) => onChange({ notes: e.target.value || undefined })}
-            className="input-glow mt-2 w-full resize-none rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
-            rows={3}
-            placeholder="Speaker notes (visible only to you during presentation)…"
-          />
-        )}
       </div>
+      <NotesPanel
+        open={showNotes}
+        value={slide.notes ?? ""}
+        onChange={(v) => onChange({ notes: v })}
+        placeholder="Speaker notes (visible only to you during presentation)…"
+      />
     </div>
   );
 }

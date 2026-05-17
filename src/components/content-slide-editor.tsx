@@ -8,6 +8,8 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { UploadCloud, X, StickyNote, Plus } from "lucide-react";
 import { MAX_IMAGES_PER_SLIDE, ALLOWED_IMAGE_MIME } from "@/lib/constants";
 import { ContentImageGrid } from "@/components/content-image-grid";
+import { SlideMarkdown } from "@/components/slide-markdown";
+import { NotesPanel } from "@/components/notes-panel";
 
 interface ContentSlideEditorProps {
   slide: ContentSlide;
@@ -102,7 +104,8 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
   return (
     <PanelGroup direction="horizontal" className="flex h-full">
       {/* Left: editor controls */}
-      <Panel defaultSize={40} minSize={30} className="flex flex-col gap-4 overflow-auto pr-3">
+      <Panel defaultSize={40} minSize={30} className="flex flex-col">
+        <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto pr-3">
         <input
           type="text"
           value={slide.title}
@@ -138,8 +141,8 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
           value={slide.body}
           onChange={(e) => onChange({ body: e.target.value })}
           onPaste={handlePaste}
-          className="input-glow flex-1 resize-none rounded-lg border border-[--border] bg-white/[0.02] px-3 py-3 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
-          placeholder="Body text… (paste an image here too)"
+          className="input-glow flex-1 min-h-[8rem] resize-y rounded-lg border border-[--border] bg-white/[0.02] px-3 py-3 font-mono text-sm text-zinc-300 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
+          placeholder={"Body text — Markdown supported (tables, lists, **bold**, `code`)…\n(paste an image here too)"}
         />
 
         {/* Image upload area */}
@@ -217,7 +220,6 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
         />
 
         {/* Notes toggle */}
-        <div>
           <button
             type="button"
             onClick={() => setShowNotes(!showNotes)}
@@ -228,16 +230,13 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
             <StickyNote className="h-3.5 w-3.5" />
             Presenter Notes
           </button>
-          {showNotes && (
-            <textarea
-              value={slide.notes ?? ""}
-              onChange={(e) => onChange({ notes: e.target.value || undefined })}
-              className="input-glow mt-2 w-full resize-none rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
-              rows={3}
-              placeholder="Speaker notes (visible only to you during presentation)…"
-            />
-          )}
         </div>
+        <NotesPanel
+          open={showNotes}
+          value={slide.notes ?? ""}
+          onChange={(v) => onChange({ notes: v })}
+          placeholder="Speaker notes (visible only to you during presentation)…"
+        />
       </Panel>
 
       <PanelResizeHandle className="resize-handle relative w-[5px] bg-transparent" />
@@ -254,7 +253,10 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
             </h1>
           )}
           {slide.body && (
-            <p className="max-w-2xl whitespace-pre-wrap text-center text-xl text-zinc-300">{slide.body}</p>
+            <SlideMarkdown
+              source={slide.body}
+              className="max-w-2xl text-center text-xl text-zinc-300"
+            />
           )}
           <ContentImageGrid images={slide.imageDataUrls} />
         </div>
