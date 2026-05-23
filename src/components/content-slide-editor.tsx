@@ -14,11 +14,12 @@ import { NotesPanel } from "@/components/notes-panel";
 interface ContentSlideEditorProps {
   slide: ContentSlide;
   onChange: (patch: Partial<ContentSlide>) => void;
+  showNotes: boolean;
+  onToggleNotes: () => void;
 }
 
-export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps) {
+export function ContentSlideEditor({ slide, onChange, showNotes, onToggleNotes }: ContentSlideEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showNotes, setShowNotes] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
 
   /** Compress and append files to the slide's image list. */
@@ -222,7 +223,7 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
         {/* Notes toggle */}
           <button
             type="button"
-            onClick={() => setShowNotes(!showNotes)}
+            onClick={onToggleNotes}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs transition-colors ${
               showNotes ? "bg-emerald-500/10 text-emerald-400" : "text-zinc-600 hover:text-zinc-400"
             }`}
@@ -255,7 +256,7 @@ export function ContentSlideEditor({ slide, onChange }: ContentSlideEditorProps)
           {slide.body && (
             <SlideMarkdown
               source={slide.body}
-              className="max-w-2xl text-center text-xl text-zinc-300"
+              className="max-w-2xl text-left text-xl text-zinc-300"
             />
           )}
           <ContentImageGrid images={slide.imageDataUrls} />

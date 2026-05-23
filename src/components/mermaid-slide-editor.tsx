@@ -3,16 +3,19 @@
 import { useState, useEffect } from "react";
 import type { MermaidSlide } from "@/types";
 import { MermaidDiagram } from "./mermaid-diagram";
-import { Workflow, StickyNote } from "lucide-react";
+import { ChevronDown, Workflow, StickyNote } from "lucide-react";
 import { NotesPanel } from "@/components/notes-panel";
+import { TITLE_FONT_SIZE_DEFAULT, TITLE_FONT_SIZE_PRESETS } from "@/lib/constants";
 
 interface MermaidSlideEditorProps {
   slide: MermaidSlide;
   onChange: (patch: Partial<MermaidSlide>) => void;
+  showNotes: boolean;
+  onToggleNotes: () => void;
 }
 
-export function MermaidSlideEditor({ slide, onChange }: MermaidSlideEditorProps) {
-  const [showNotes, setShowNotes] = useState(false);
+export function MermaidSlideEditor({ slide, onChange, showNotes, onToggleNotes }: MermaidSlideEditorProps) {
+  const titleFontSize = slide.titleFontSize ?? TITLE_FONT_SIZE_DEFAULT;
   // Debounce source changes for the live preview to keep typing smooth.
   const [previewSource, setPreviewSource] = useState(slide.source);
   useEffect(() => {
@@ -33,8 +36,24 @@ export function MermaidSlideEditor({ slide, onChange }: MermaidSlideEditorProps)
           value={slide.title}
           onChange={(e) => onChange({ title: e.target.value })}
           placeholder="Slide title"
+          style={{ fontSize: `${titleFontSize}px` }}
           className="input-glow flex-1 rounded-lg border border-[--border] bg-white/[0.02] px-3 py-2 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
         />
+        <div className="relative">
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
+          <select
+            aria-label="Title size"
+            value={titleFontSize}
+            onChange={(e) => onChange({ titleFontSize: Number(e.target.value) })}
+            className="input-glow w-20 cursor-pointer appearance-none rounded-lg border border-[--border] bg-white/[0.02] py-2 pl-3 pr-8 text-xs text-zinc-300 outline-none transition-all focus:border-[--accent] focus:bg-white/[0.04]"
+          >
+            {TITLE_FONT_SIZE_PRESETS.map((preset) => (
+              <option key={preset.value} value={preset.value}>
+                {preset.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <input
           type="text"
           value={slide.section ?? ""}
@@ -64,7 +83,7 @@ export function MermaidSlideEditor({ slide, onChange }: MermaidSlideEditorProps)
       <div className="shrink-0">
         <button
           type="button"
-          onClick={() => setShowNotes(!showNotes)}
+          onClick={onToggleNotes}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs transition-colors ${
             showNotes ? "bg-emerald-500/10 text-emerald-400" : "text-zinc-600 hover:text-zinc-400"
           }`}

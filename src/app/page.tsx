@@ -18,6 +18,25 @@ import type { CodeSlide, ContentSlide, MermaidSlide } from "@/types";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { BookOpen, Download, Upload, PlayIcon, Printer, MonitorDown } from "lucide-react";
 
+const NOTES_OPEN_STORAGE_KEY = "slido:notes-open";
+
+function readStoredNotesOpen(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(NOTES_OPEN_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function persistNotesOpen(open: boolean): void {
+  try {
+    localStorage.setItem(NOTES_OPEN_STORAGE_KEY, String(open));
+  } catch {
+    /* ignore */
+  }
+}
+
 function Star() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="h-full w-full fill-emerald-300">
@@ -49,6 +68,7 @@ export default function Home() {
   const activeSlide = store.getActiveSlide();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [learnOpen, setLearnOpen] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const [serverLoaded, setServerLoaded] = useState(false);
   const presentationBlockers = useMemo(
     () => presentation ? getCodePresentationBlockers(presentation.slides) : [],
@@ -91,13 +111,25 @@ export default function Home() {
     if (!serverLoaded) return;
     try {
       if (localStorage.getItem("slidedude-learn-seen") !== "true") {
-        setLearnOpen(true);
         localStorage.setItem("slidedude-learn-seen", "true");
+        queueMicrotask(() => setLearnOpen(true));
       }
     } catch {
       // Ignore private browsing or storage failures; the drawer is still available.
     }
   }, [serverLoaded]);
+
+  useEffect(() => {
+    queueMicrotask(() => setShowNotes(readStoredNotesOpen()));
+  }, []);
+
+  const handleToggleNotes = useCallback(() => {
+    setShowNotes((open) => {
+      const next = !open;
+      persistNotesOpen(next);
+      return next;
+    });
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -398,18 +430,24 @@ export default function Home() {
                   <CodeSlideEditor
                     slide={activeSlide}
                     onChange={handleSlideUpdate}
+                    showNotes={showNotes}
+                    onToggleNotes={handleToggleNotes}
                   />
                 )}
                 {activeSlide?.type === "content" && (
                   <ContentSlideEditor
                     slide={activeSlide}
                     onChange={handleSlideUpdate}
+                    showNotes={showNotes}
+                    onToggleNotes={handleToggleNotes}
                   />
                 )}
                 {activeSlide?.type === "mermaid" && (
                   <MermaidSlideEditor
                     slide={activeSlide}
                     onChange={handleSlideUpdate}
+                    showNotes={showNotes}
+                    onToggleNotes={handleToggleNotes}
                   />
                 )}
               </ErrorBoundary>

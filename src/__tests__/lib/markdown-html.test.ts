@@ -30,4 +30,10 @@ describe("renderContentMarkdownHtml", () => {
     expect(html).not.toContain("javascript:alert");
     expect(html).toContain("href=\"https://example.com\"");
   });
+
+  it("renders single newlines inside paragraphs as line breaks", () => {
+    const html = renderContentMarkdownHtml("Line one\nLine two");
+
+    expect(html).toBe("<p>Line one<br>Line two</p>");
+  });
 });

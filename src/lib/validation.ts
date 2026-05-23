@@ -44,6 +44,10 @@ function isValidString(v: unknown, maxLen = MAX_STRING_LENGTH): v is string {
   return typeof v === "string" && v.length <= maxLen;
 }
 
+function isValidOptionalTitleFontSize(value: unknown): boolean {
+  return value === undefined || (typeof value === "number" && value >= 16 && value <= 96);
+}
+
 export function isValidSlide(s: unknown): s is Slide {
   if (!s || typeof s !== "object") return false;
   const slide = normalizeSlide(s as Record<string, unknown>);
@@ -51,7 +55,11 @@ export function isValidSlide(s: unknown): s is Slide {
   // Optional `section` (free-text grouping label)
   if (slide.section !== undefined && !isValidString(slide.section, 200)) return false;
   if (slide.type === "code") {
-    return isValidString(slide.code) && isValidString(slide.language, 50);
+    return (
+      isValidOptionalTitleFontSize(slide.titleFontSize) &&
+      isValidString(slide.code) &&
+      isValidString(slide.language, 50)
+    );
   }
   if (slide.type === "content") {
     if (!isValidString(slide.body)) return false;
@@ -62,7 +70,7 @@ export function isValidSlide(s: unknown): s is Slide {
     return images.every(isValidImageDataUrl);
   }
   if (slide.type === "mermaid") {
-    return isValidString(slide.source);
+    return isValidOptionalTitleFontSize(slide.titleFontSize) && isValidString(slide.source);
   }
   return false;
 }

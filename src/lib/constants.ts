@@ -15,3 +15,14 @@ export const MAX_IMAGE_BYTES = 600 * 1024;
 
 /** MIME types accepted for image upload. SVG excluded (script vector). */
 export const ALLOWED_IMAGE_MIME = ["image/webp", "image/png", "image/jpeg", "image/gif"] as const;
+
+/** Default title size for slide types that expose title sizing. */
+export const TITLE_FONT_SIZE_DEFAULT = 32;
+
+/** Preset title sizes for compact editor controls. */
+export const TITLE_FONT_SIZE_PRESETS = [
+	{ label: "S", value: 24 },
+	{ label: "M", value: 32 },
+	{ label: "L", value: 44 },
+	{ label: "XL", value: 56 },
+] as const;

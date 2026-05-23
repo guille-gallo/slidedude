@@ -24,6 +24,42 @@ describe("isValidSlide", () => {
     ).toBe(true);
   });
 
+  it("accepts a code slide with a valid title font size", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "code",
+        title: "T",
+        titleFontSize: 44,
+        code: "x",
+        language: "ts",
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects a code slide with an invalid title font size", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "code",
+        title: "T",
+        titleFontSize: 120,
+        code: "x",
+        language: "ts",
+      }),
+    ).toBe(false);
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "code",
+        title: "T",
+        titleFontSize: "large",
+        code: "x",
+        language: "ts",
+      }),
+    ).toBe(false);
+  });
+
   it("accepts a valid content slide with no images", () => {
     expect(
       isValidSlide({
@@ -186,6 +222,39 @@ describe("isValidSlide", () => {
         source: "flowchart TB\n  A --> B",
       }),
     ).toBe(true);
+  });
+
+  it("accepts a mermaid slide with a valid title font size", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "mermaid",
+        title: "Diagram",
+        titleFontSize: 56,
+        source: "flowchart TB\n  A --> B",
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects a mermaid slide with an invalid title font size", () => {
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "mermaid",
+        title: "Diagram",
+        titleFontSize: 12,
+        source: "flowchart TB\n  A --> B",
+      }),
+    ).toBe(false);
+    expect(
+      isValidSlide({
+        id: "1",
+        type: "mermaid",
+        title: "Diagram",
+        titleFontSize: "XL",
+        source: "flowchart TB\n  A --> B",
+      }),
+    ).toBe(false);
   });
 
   it("rejects mermaid slide missing source", () => {

@@ -2,6 +2,7 @@ export interface CodeSlide {
   id: string;
   type: "code";
   title: string;
+  titleFontSize?: number;
   code: string;
   language: string;
   notes?: string;
@@ -23,6 +24,7 @@ export interface MermaidSlide {
   id: string;
   type: "mermaid";
   title: string;
+  titleFontSize?: number;
   source: string;
   notes?: string;
   section?: string;

@@ -45,6 +45,14 @@ export function MermaidDiagram({ source, theme = "dark", onReady, className }: M
             themeVariables: {
               background: "transparent",
               clusterBkg: "transparent",
+              fontFamily: "ui-sans-serif, system-ui, sans-serif",
+              fontSize: "22px",
+            },
+            flowchart: {
+              useMaxWidth: true,
+              htmlLabels: true,
+              nodeSpacing: 40,
+              rankSpacing: 50,
             },
           });
           initialized = true;
@@ -67,6 +75,7 @@ export function MermaidDiagram({ source, theme = "dark", onReady, className }: M
             svgEl.style.height = "100%";
             svgEl.style.maxHeight = "100%";
             svgEl.style.background = "transparent";
+            svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
             // Mermaid sometimes injects a full-size background <rect> — strip its fill.
             svgEl.querySelectorAll("rect.background, .cluster-bkg").forEach((el) => {
               (el as SVGElement).setAttribute("fill", "transparent");

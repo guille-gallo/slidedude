@@ -12,6 +12,7 @@ import { ShikiCodeBlock } from "@/components/shiki-code-block";
 import { SlideMarkdown } from "@/components/slide-markdown";
 import { groupSections, findSection } from "@/lib/sections";
 import { CODE_PRESENTATION_MAX_LINES, getCodePresentationBlockers } from "@/lib/code-limits";
+import { TITLE_FONT_SIZE_DEFAULT } from "@/lib/constants";
 
 function useHydration() {
   const [hydrated, setHydrated] = useState(false);
@@ -162,7 +163,10 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
           {currentSlide.type === "code" ? (
             <>
               {currentSlide.title && (
-                <h1 className="text-3xl font-bold text-zinc-100 shrink-0">
+                <h1
+                  className="font-bold text-zinc-100 shrink-0"
+                  style={{ fontSize: `${currentSlide.titleFontSize ?? TITLE_FONT_SIZE_DEFAULT}px` }}
+                >
                   {currentSlide.title}
                 </h1>
               )}
@@ -193,7 +197,10 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
           ) : currentSlide.type === "mermaid" ? (
             <>
               {currentSlide.title && (
-                <h1 className="text-3xl font-bold text-zinc-100 shrink-0">
+                <h1
+                  className="font-bold text-zinc-100 shrink-0"
+                  style={{ fontSize: `${currentSlide.titleFontSize ?? TITLE_FONT_SIZE_DEFAULT}px` }}
+                >
                   {currentSlide.title}
                 </h1>
               )}
@@ -214,7 +221,7 @@ function PresentationView({ slides, initialIndex }: { slides: Slide[]; initialIn
               {currentSlide.body && (
                 <SlideMarkdown
                   source={currentSlide.body}
-                  className="max-w-3xl shrink-0 text-center text-xl text-zinc-300"
+                  className="max-w-3xl shrink-0 text-left text-xl text-zinc-300"
                 />
               )}
               <ContentImageGrid images={currentSlide.imageDataUrls} />
@@ -450,7 +457,14 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
             <PrintCodeSlide slide={slide} />
           ) : slide.type === "mermaid" ? (
             <div className="flex w-full max-w-4xl flex-col items-center gap-6">
-              {slide.title && <h2 className="text-3xl font-bold">{slide.title}</h2>}
+              {slide.title && (
+                <h2
+                  className="font-bold"
+                  style={{ fontSize: `${slide.titleFontSize ?? TITLE_FONT_SIZE_DEFAULT}px` }}
+                >
+                  {slide.title}
+                </h2>
+              )}
               <div className="flex h-[520px] w-full items-center justify-center">
                 <MermaidDiagram
                   source={slide.source}
@@ -468,7 +482,7 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
                 </h2>
               )}
               {slide.body && (
-                <SlideMarkdown source={slide.body} className="text-xl text-zinc-300" />
+                <SlideMarkdown source={slide.body} className="w-full text-left text-xl text-zinc-300" />
               )}
               {slide.imageDataUrls.length > 0 && (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -489,7 +503,14 @@ function PrintView({ slides, name }: { slides: Slide[]; name: string }) {
 function PrintCodeSlide({ slide }: { slide: Extract<Slide, { type: "code" }> }) {
   return (
     <div className="flex w-full max-w-4xl flex-col items-center gap-4 text-[15px] leading-[1.6]">
-      {slide.title && <h2 className="text-3xl font-bold leading-tight">{slide.title}</h2>}
+      {slide.title && (
+        <h2
+          className="font-bold leading-tight"
+          style={{ fontSize: `${slide.titleFontSize ?? TITLE_FONT_SIZE_DEFAULT}px` }}
+        >
+          {slide.title}
+        </h2>
+      )}
       <ShikiCodeBlock
         code={slide.code}
         lang={slide.language}
