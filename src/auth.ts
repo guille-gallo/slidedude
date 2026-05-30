@@ -23,6 +23,7 @@ export const { handlers, auth: nextAuthAuth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID?.trim(),
       clientSecret: process.env.AUTH_GOOGLE_SECRET?.trim(),
+      issuer: "https://accounts.google.com",
       allowDangerousEmailAccountLinking: true,
     }),
     GitHub({
