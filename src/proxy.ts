@@ -5,13 +5,15 @@ import { auth } from "@/auth";
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow auth routes and static assets through
+  // Allow auth routes, static assets, and public pages through
   if (
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname === "/icon.svg" ||
-    pathname === "/login"
+    pathname === "/login" ||
+    pathname === "/privacy" ||
+    pathname === "/terms"
   ) {
     return NextResponse.next();
   }
