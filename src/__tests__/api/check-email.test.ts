@@ -6,6 +6,18 @@ vi.mock("@/auth", () => ({
   isEmailAllowed: (email: string) => isEmailAllowedMock(email),
 }));
 
+const magicLinkRateLimitMock = vi.fn();
+const magicLinkIpRateLimitMock = vi.fn();
+
+vi.mock("@/lib/rate-limit", () => ({
+  magicLinkRateLimit: {
+    limit: (identifier: string) => magicLinkRateLimitMock(identifier),
+  },
+  magicLinkIpRateLimit: {
+    limit: (identifier: string) => magicLinkIpRateLimitMock(identifier),
+  },
+}));
+
 import { POST } from "@/app/api/auth/check-email/route";
 
 function req(body: unknown) {
@@ -19,6 +31,10 @@ function req(body: unknown) {
 
 beforeEach(() => {
   isEmailAllowedMock.mockReset();
+  magicLinkRateLimitMock.mockReset();
+  magicLinkIpRateLimitMock.mockReset();
+  magicLinkRateLimitMock.mockResolvedValue({ success: true });
+  magicLinkIpRateLimitMock.mockResolvedValue({ success: true });
 });
 
 describe("POST /api/auth/check-email", () => {
@@ -39,6 +55,12 @@ describe("POST /api/auth/check-email", () => {
     expect(res.status).toBe(400);
   });
 
+  it("returns 400 when email format is invalid", async () => {
+    const res = await POST(req({ email: "not-an-email" }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ allowed: false });
+  });
+
   it("returns allowed:true when email is in allowlist", async () => {
     isEmailAllowedMock.mockReturnValueOnce(true);
     const res = await POST(req({ email: "ok@example.com" }));
@@ -52,5 +74,25 @@ describe("POST /api/auth/check-email", () => {
     const res = await POST(req({ email: "no@example.com" }));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ allowed: false });
+  });
+
+  it("returns 429 when email rate limit is exceeded", async () => {
+    magicLinkRateLimitMock.mockResolvedValueOnce({ success: false });
+    const res = await POST(req({ email: "test@example.com" }));
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({
+      allowed: false,
+      error: "Too many requests. Try again later.",
+    });
+  });
+
+  it("returns 429 when IP rate limit is exceeded", async () => {
+    magicLinkIpRateLimitMock.mockResolvedValueOnce({ success: false });
+    const res = await POST(req({ email: "test@example.com" }));
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({
+      allowed: false,
+      error: "Too many requests. Try again later.",
+    });
   });
 });
