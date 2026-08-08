@@ -156,9 +156,9 @@ export function LearnDrawer({
                 >
                   <span className="flex items-center justify-between gap-3">
                     <span className="text-sm font-medium text-zinc-200">{template.name}</span>
-                    <span className="shrink-0 font-mono text-[11px] text-zinc-600">{template.slides.length} slides</span>
+                    <span className="shrink-0 font-mono text-[11px] text-zinc-400">{template.slides.length} slides</span>
                   </span>
-                  <span className="mt-1 block text-xs leading-5 text-zinc-500">{template.description}</span>
+                  <span className="mt-1 block text-xs leading-5 text-zinc-300">{template.description}</span>
                 </button>
               ))}
             </div>
@@ -194,7 +194,7 @@ export function LearnDrawer({
               {capabilityGroups.map((item) => (
                 <div key={item.title} className="rounded-md border border-[--border] bg-white/[0.015] px-3 py-2">
                   <p className="text-sm font-medium text-zinc-300">{item.title}</p>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">{item.description}</p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-300">{item.description}</p>
                 </div>
               ))}
             </div>

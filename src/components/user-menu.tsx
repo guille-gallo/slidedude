@@ -22,7 +22,7 @@ export function UserMenu() {
       )}
       <button
         onClick={() => signOut({ callbackUrl: "/login" })}
-        className="rounded-md px-2 py-1 text-xs text-zinc-600 transition-all hover:bg-white/[0.04] hover:text-zinc-400"
+        className="rounded-md px-2 py-1 text-xs text-zinc-300 transition-all hover:bg-white/[0.04] hover:text-white"
       >
         Sign out
       </button>
