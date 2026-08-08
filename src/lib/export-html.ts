@@ -1,22 +1,10 @@
 import "server-only";
-import { createHighlighter } from "shiki/bundle/web";
-import { codeToKeyedTokens, syncTokenKeys } from "shiki-magic-move/core";
-import type { KeyedTokensInfo } from "shiki-magic-move/types";
+import { codeToKeyedTokens, syncTokenKeys } from "@shikijs/magic-move/core";
+import type { KeyedTokensInfo } from "@shikijs/magic-move/types";
 import type { Presentation, Slide } from "@/types";
+import { getAppHighlighter, isSupportedLang, HIGHLIGHT_THEME } from "@/lib/highlighter";
 import { groupSections } from "@/lib/sections";
 import { renderContentMarkdownHtml } from "@/lib/markdown-html";
-
-const LANGS = [
-  "typescript",
-  "javascript",
-  "html",
-  "css",
-  "json",
-  "python",
-  "markdown",
-  "jsx",
-  "tsx",
-] as const;
 
 /** Safely embed a value as JSON inside a <script> tag.
  *  Escapes < > & to Unicode escapes so no HTML-significant bytes appear. */
@@ -56,22 +44,17 @@ interface ExportData {
 async function buildExportData(presentation: Presentation): Promise<ExportData> {
   const { slides } = presentation;
 
-  const highlighter = await createHighlighter({
-    themes: ["github-dark"],
-    langs: [...LANGS],
-  });
+  const highlighter = await getAppHighlighter();
 
   // Pre-compute tokens for every code slide.
   const codeTokens: Record<number, KeyedTokensInfo> = {};
   for (let i = 0; i < slides.length; i++) {
     const slide = slides[i];
     if (slide.type !== "code") continue;
-    const lang = LANGS.includes(slide.language as (typeof LANGS)[number])
-      ? slide.language
-      : "typescript";
+    const lang = isSupportedLang(slide.language) ? slide.language : "typescript";
     codeTokens[i] = codeToKeyedTokens(highlighter, slide.code, {
-      lang: lang as Parameters<typeof highlighter.codeToTokens>[1]["lang"],
-      theme: "github-dark",
+      lang,
+      theme: HIGHLIGHT_THEME,
     });
   }
 
@@ -101,9 +84,13 @@ async function buildExportData(presentation: Presentation): Promise<ExportData> 
 }
 
 // ---------------------------------------------------------------------------
-// Inlined MagicMoveRenderer (from shiki-magic-move/renderer — no external deps)
+// Inlined MagicMoveRenderer, a minified port of @shikijs/magic-move/renderer
+// (dependency-free). Deliberate divergence: applyNodeStyle skips background
+// styles — see NOTE below. Kept in sync with the installed package by
+// src/__tests__/utils/export-html.test.ts; update this port when that test
+// fails after a @shikijs/magic-move bump.
 // ---------------------------------------------------------------------------
-const MAGIC_MOVE_RENDERER_JS = `
+export const MAGIC_MOVE_RENDERER_JS = `
 const CLASS_PREFIX='shiki-magic-move';
 const CLASS_LEAVE_FROM=CLASS_PREFIX+'-leave-from';
 const CLASS_LEAVE_TO=CLASS_PREFIX+'-leave-to';
@@ -246,7 +233,8 @@ class MagicMoveRenderer{
 // ---------------------------------------------------------------------------
 // Inline CSS — magic-move + presentation styles
 // ---------------------------------------------------------------------------
-const MAGIC_MOVE_CSS = `.shiki-magic-move-container{position:relative;white-space:pre}.shiki-magic-move-line-number{opacity:.3;-webkit-user-select:none;-moz-user-select:none;user-select:none}.shiki-magic-move-item{display:inline-block;transition:color var(--smm-duration,.5s) var(--smm-easing,"ease")}.shiki-magic-move-enter-active,.shiki-magic-move-leave-active,.shiki-magic-move-move{transition:all var(--smm-duration,.5s) var(--smm-easing,"ease")}.shiki-magic-move-container-resize,.shiki-magic-move-container-restyle{transition:all var(--smm-duration,.5s) var(--smm-easing,"ease");transition-delay:calc(var(--smm-duration,.5s)*var(--smm-delay-container,1))}.shiki-magic-move-move{transition-delay:calc(var(--smm-duration,.5s)*var(--smm-delay-move,1) + var(--smm-stagger,0));z-index:1}.shiki-magic-move-enter-active{transition-delay:calc(var(--smm-duration,.5s)*var(--smm-delay-enter,1) + var(--smm-stagger,0));z-index:1}.shiki-magic-move-leave-active{transition-delay:calc(var(--smm-duration,.5s)*var(--smm-delay-leave,1) + var(--smm-stagger,0))}.shiki-magic-move-enter-from,.shiki-magic-move-leave-to{opacity:0}br.shiki-magic-move-leave-active{display:none}`;
+// Exact copy of @shikijs/magic-move/style.css — drift-guarded by the export-html test.
+export const MAGIC_MOVE_CSS = ".shiki-magic-move-container{position:relative;white-space:pre}.shiki-magic-move-line-number{opacity:.3;-webkit-user-select:none;-moz-user-select:none;user-select:none}.shiki-magic-move-item{display:inline-block;transition:color var(--smm-duration,.5s) var(--smm-easing,\"ease\")}.shiki-magic-move-enter-active,.shiki-magic-move-leave-active,.shiki-magic-move-move{transition:all var(--smm-duration,.5s) var(--smm-easing,\"ease\")}.shiki-magic-move-container-resize,.shiki-magic-move-container-restyle{transition:all var(--smm-duration,.5s) var(--smm-easing,\"ease\");transition-delay:calc(var(--smm-duration, .5s)*var(--smm-delay-container, 1))}.shiki-magic-move-move{transition-delay:calc(var(--smm-duration, .5s)*var(--smm-delay-move, 1) + var(--smm-stagger, 0));z-index:1}.shiki-magic-move-enter-active{transition-delay:calc(var(--smm-duration, .5s)*var(--smm-delay-enter, 1) + var(--smm-stagger, 0));z-index:1}.shiki-magic-move-leave-active{transition-delay:calc(var(--smm-duration, .5s)*var(--smm-delay-leave, 1) + var(--smm-stagger, 0))}.shiki-magic-move-enter-from,.shiki-magic-move-leave-to{opacity:0}br.shiki-magic-move-leave-active{display:none}";
 
 const PRESENTATION_CSS = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}

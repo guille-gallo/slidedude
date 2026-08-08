@@ -1,48 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { HighlighterCore } from "shiki";
-import { createHighlighter } from "shiki/bundle/web";
+import type { HighlighterCore } from "shiki/core";
+import {
+  getAppHighlighter,
+  HIGHLIGHT_LANGS,
+  type SupportedLang,
+  type SupportedTheme,
+} from "@/lib/highlighter";
 
-const THEMES = [
-  "github-dark",
-] as const;
+export type { SupportedLang, SupportedTheme };
 
-const INITIAL_LANGS = [
-  "typescript",
-  "javascript",
-  "html",
-  "css",
-  "json",
-  "python",
-  "markdown",
-  "jsx",
-  "tsx",
-] as const;
-
-export type SupportedTheme = (typeof THEMES)[number];
-export type SupportedLang = (typeof INITIAL_LANGS)[number];
-
-export const LANG_LIST: readonly string[] = INITIAL_LANGS;
-
-let highlighterPromise: Promise<HighlighterCore> | null = null;
-
-function getHighlighter(): Promise<HighlighterCore> {
-  if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
-      themes: [...THEMES],
-      langs: [...INITIAL_LANGS],
-    });
-  }
-  return highlighterPromise;
-}
+export const LANG_LIST: readonly string[] = HIGHLIGHT_LANGS;
 
 export function useHighlighter() {
   const [highlighter, setHighlighter] = useState<HighlighterCore | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    getHighlighter().then((h) => {
+    getAppHighlighter().then((h) => {
       if (!cancelled) setHighlighter(h);
     });
     return () => {
