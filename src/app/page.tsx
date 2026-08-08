@@ -15,7 +15,7 @@ import { createPresentationFromTemplate, createTutorialPresentation } from "@/li
 import { CODE_PRESENTATION_MAX_LINES, getCodePresentationBlockers } from "@/lib/code-limits";
 import { MAX_PRESENTATIONS } from "@/lib/validation";
 import type { CodeSlide, ContentSlide, MermaidSlide } from "@/types";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Group, Panel, Separator } from "react-resizable-panels";
 import { BookOpen, Download, Upload, PlayIcon, Printer, MonitorDown } from "lucide-react";
 
 const NOTES_OPEN_STORAGE_KEY = "slido:notes-open";
@@ -406,9 +406,9 @@ export default function Home() {
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
-        <PanelGroup direction="horizontal" className="h-full w-full">
+        <Group orientation="horizontal" className="h-full w-full">
           {/* Sidebar Panel */}
-          <Panel defaultSize={18} minSize={14} maxSize={28} className="flex h-full flex-col border-r border-[--border] bg-[--sidebar]" role="complementary" aria-label="Slide list">
+          <Panel defaultSize="18" minSize="14" maxSize="28" className="flex h-full flex-col border-r border-[--border] bg-[--sidebar]" role="complementary" aria-label="Slide list">
             <SlideList
               slides={presentation.slides}
               activeIndex={presentation.activeSlideIndex}
@@ -420,10 +420,10 @@ export default function Home() {
             />
           </Panel>
 
-          <PanelResizeHandle className="resize-handle relative w-[5px] bg-transparent" />
+          <Separator className="resize-handle relative w-[5px] bg-transparent" />
 
           {/* Editor Panel */}
-          <Panel defaultSize={82} minSize={40} className="flex h-full flex-col bg-[--surface]">
+          <Panel defaultSize="82" minSize="40" className="flex h-full flex-col bg-[--surface]">
             <main id="main-editor" className="flex-1 overflow-auto p-5">
               <ErrorBoundary>
                 {activeSlide?.type === "code" && (
@@ -453,7 +453,7 @@ export default function Home() {
               </ErrorBoundary>
             </main>
           </Panel>
-        </PanelGroup>
+        </Group>
       </div>
 
       <LearnDrawer

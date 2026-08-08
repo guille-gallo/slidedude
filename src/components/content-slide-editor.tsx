@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import type { ContentSlide } from "@/types";
 import { compressImage, compressImageFromDataUrl } from "@/utils/compress-image";
 import Image from "next/image";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Group, Panel, Separator } from "react-resizable-panels";
 import { UploadCloud, X, StickyNote, Plus } from "lucide-react";
 import { MAX_IMAGES_PER_SLIDE, ALLOWED_IMAGE_MIME } from "@/lib/constants";
 import { ContentImageGrid } from "@/components/content-image-grid";
@@ -103,9 +103,9 @@ export function ContentSlideEditor({ slide, onChange, showNotes, onToggleNotes }
   const atCap = slide.imageDataUrls.length >= MAX_IMAGES_PER_SLIDE;
 
   return (
-    <PanelGroup direction="horizontal" className="flex h-full">
+    <Group orientation="horizontal" className="flex h-full">
       {/* Left: editor controls */}
-      <Panel defaultSize={40} minSize={30} className="flex flex-col">
+      <Panel defaultSize="40" minSize="30" className="flex flex-col">
         <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto pr-3">
         <input
           type="text"
@@ -240,7 +240,7 @@ export function ContentSlideEditor({ slide, onChange, showNotes, onToggleNotes }
         />
       </Panel>
 
-      <PanelResizeHandle className="resize-handle relative w-[5px] bg-transparent" />
+      <Separator className="resize-handle relative w-[5px] bg-transparent" />
 
       {/* Right: live preview */}
       <Panel className="canvas-bg flex flex-col items-center justify-center overflow-auto rounded-lg border border-[--border] p-8">
@@ -262,6 +262,6 @@ export function ContentSlideEditor({ slide, onChange, showNotes, onToggleNotes }
           <ContentImageGrid images={slide.imageDataUrls} />
         </div>
       </Panel>
-    </PanelGroup>
+    </Group>
   );
 }

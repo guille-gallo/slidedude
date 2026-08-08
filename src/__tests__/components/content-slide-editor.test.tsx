@@ -17,8 +17,8 @@ vi.mock("next/image", () => ({
 // react-resizable-panels just renders children
 vi.mock("react-resizable-panels", () => ({
   Panel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  PanelGroup: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  PanelResizeHandle: () => null,
+  Group: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Separator: () => null,
 }));
 
 // Compression returns a predictable value
