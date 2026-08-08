@@ -72,12 +72,15 @@ function SortableSlideItem({
     <div
       ref={setNodeRef}
       style={style}
+      {...listeners}
       onClick={onSelect}
       role="option"
       aria-selected={isActive}
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
-      className={`group relative cursor-pointer rounded-lg border p-2.5 transition-all duration-150 ${
+      className={`group relative cursor-pointer active:cursor-grabbing rounded-lg border p-2.5 transition-all duration-150 ${
+        isDragging ? "cursor-grabbing" : ""
+      } ${
         isActive
           ? blocksPresentation
             ? "border-red-500/50 bg-red-500/[0.06] shadow-[0_0_16px_-4px_rgba(248,113,113,0.25),inset_0_0_0_1px_rgba(248,113,113,0.12)]"
@@ -95,7 +98,8 @@ function SortableSlideItem({
         />
       )}
       <div className="flex items-center gap-2">
-        <span
+        <button
+          type="button"
           {...attributes}
           {...listeners}
           className="cursor-grab touch-none text-zinc-600 transition-colors hover:text-zinc-400"
@@ -103,7 +107,7 @@ function SortableSlideItem({
           aria-label={`Reorder slide ${index + 1}`}
         >
           <GripVertical className="h-3 w-3" />
-        </span>
+        </button>
         <span className={`font-mono text-[10px] ${isActive ? "text-emerald-400" : "text-zinc-600"}`}>{String(index + 1).padStart(2, "0")}</span>
         <span
           className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
@@ -172,7 +176,9 @@ export function SlideList({
   onDuplicateSlide,
 }: SlideListProps) {
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    // Distance constraint keeps plain clicks selecting the slide; dragging
+    // starts anywhere on the row once the pointer moves.
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 

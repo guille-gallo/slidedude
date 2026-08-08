@@ -1,21 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import { usePresentationStore } from "@/store/presentation-store";
 import { findSection } from "@/lib/sections";
 
 function useHydration() {
-  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    if (usePresentationStore.persist.hasHydrated()) {
-      setHydrated(true);
-      return;
-    }
-    const unsub = usePresentationStore.persist.onFinishHydration(() => setHydrated(true));
     void usePresentationStore.persist.rehydrate();
-    return unsub;
   }, []);
-  return hydrated;
+  return useSyncExternalStore(
+    (onHydrated) => usePresentationStore.persist.onFinishHydration(onHydrated),
+    () => usePresentationStore.persist.hasHydrated(),
+    () => false,
+  );
 }
 
 export default function PresenterPage() {
@@ -26,7 +23,6 @@ export default function PresenterPage() {
   });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
-  const startTime = useRef(Date.now());
 
   // Listen to BroadcastChannel for slide changes
   useEffect(() => {
@@ -41,8 +37,9 @@ export default function PresenterPage() {
 
   // Timer
   useEffect(() => {
+    const startTime = Date.now();
     const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTime.current) / 1000));
+      setElapsed(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
     return () => clearInterval(interval);
   }, []);
