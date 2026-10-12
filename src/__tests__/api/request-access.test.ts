@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 const isEmailAllowedMock = vi.fn();
 const getRecipientMock = vi.fn();
 const limitMock = vi.fn();
+const globalLimitMock = vi.fn();
 const fetchMock = vi.fn();
 
 vi.mock("@/auth", () => ({
@@ -12,15 +13,16 @@ vi.mock("@/auth", () => ({
 
 vi.mock("@/lib/rate-limit", () => ({
   accessRequestRateLimit: { limit: (identifier: string) => limitMock(identifier) },
+  accessRequestGlobalRateLimit: { limit: (identifier: string) => globalLimitMock(identifier) },
 }));
 
 import { POST } from "@/app/api/auth/request-access/route";
 
-function req(body: unknown) {
+function req(body: unknown, headers: Record<string, string> = { "x-forwarded-for": "1.2.3.4" }) {
   return new Request("http://localhost/api/auth/request-access", {
     method: "POST",
     body: typeof body === "string" ? body : JSON.stringify(body),
-    headers: { "content-type": "application/json", "x-forwarded-for": "1.2.3.4" },
+    headers: { "content-type": "application/json", ...headers },
   });
 }
 
@@ -28,6 +30,7 @@ beforeEach(() => {
   isEmailAllowedMock.mockReset().mockReturnValue(false);
   getRecipientMock.mockReset().mockReturnValue("owner@example.com");
   limitMock.mockReset().mockResolvedValue({ success: true });
+  globalLimitMock.mockReset().mockResolvedValue({ success: true });
   fetchMock.mockReset().mockResolvedValue({ ok: true });
   vi.stubGlobal("fetch", fetchMock);
   vi.stubEnv("AUTH_RESEND_KEY", "re_test");
@@ -53,18 +56,49 @@ describe("POST /api/auth/request-access", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 429 when rate-limited", async () => {
+  it("returns 429 when the IP is rate-limited, without using the email's quota", async () => {
     limitMock.mockResolvedValueOnce({ success: false });
+    const res = await POST(req({ email: "a@b.co" }));
+    expect(res.status).toBe(429);
+    expect(limitMock).toHaveBeenCalledTimes(1);
+    expect(limitMock).toHaveBeenCalledWith("ip:1.2.3.4");
+    expect(globalLimitMock).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 when the global limit is reached", async () => {
+    globalLimitMock.mockResolvedValueOnce({ success: false });
     const res = await POST(req({ email: "a@b.co" }));
     expect(res.status).toBe(429);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("returns 409 when the email already has access", async () => {
+  it("answers like a sent request when the email already has access", async () => {
     isEmailAllowedMock.mockReturnValueOnce(true);
     const res = await POST(req({ email: "a@b.co" }));
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("answers like a sent request when the email's quota is used up", async () => {
+    limitMock.mockResolvedValueOnce({ success: true }).mockResolvedValueOnce({ success: false });
+    const res = await POST(req({ email: "a@b.co" }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("ignores client-supplied entries in x-forwarded-for", async () => {
+    await POST(req({ email: "a@b.co" }, { "x-forwarded-for": "9.9.9.9, 1.2.3.4" }));
+    expect(limitMock).toHaveBeenCalledWith("ip:1.2.3.4");
+  });
+
+  it("prefers the platform IP header over x-forwarded-for", async () => {
+    await POST(
+      req({ email: "a@b.co" }, { "x-forwarded-for": "9.9.9.9", "x-vercel-forwarded-for": "5.6.7.8" })
+    );
+    expect(limitMock).toHaveBeenCalledWith("ip:5.6.7.8");
   });
 
   it("returns 503 when no recipient is configured", async () => {
@@ -88,6 +122,7 @@ describe("POST /api/auth/request-access", () => {
     expect(sent.to).toEqual(["owner@example.com"]);
     expect(sent.reply_to).toBe("new@user.com");
     expect(sent.text).toContain("Let me in please");
+    expect(sent.text).toContain("not verified");
   });
 
   it("returns 502 when the email provider fails", async () => {

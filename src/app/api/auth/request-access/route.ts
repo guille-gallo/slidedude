@@ -1,15 +1,18 @@
 import { getAccessRequestRecipient, isEmailAllowed } from "@/auth";
-import { accessRequestRateLimit } from "@/lib/rate-limit";
+import { accessRequestGlobalRateLimit, accessRequestRateLimit } from "@/lib/rate-limit";
 import { normalizeEmail } from "@/lib/email";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
 const MAX_MESSAGE_LENGTH = 500;
 
+// Prefers the headers set by the platform. For `x-forwarded-for` the last entry
+// is the one added by the nearest proxy; earlier entries are client-supplied.
 function getClientIp(request: Request): string {
   return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
+    request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() ||
     "unknown"
   );
 }
@@ -37,21 +40,31 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const ipLimit = await accessRequestRateLimit.limit(`ip:${getClientIp(request)}`);
-  const emailLimit = await accessRequestRateLimit.limit(`email:${normalizedEmail}`);
-  if (!ipLimit.success || !emailLimit.success) {
-    return Response.json({ error: "Too many requests. Try again later." }, { status: 429 });
-  }
-
-  if (isEmailAllowed(normalizedEmail)) {
-    return Response.json({ error: "This email already has access. Sign in above." }, { status: 409 });
-  }
-
   const recipient = getAccessRequestRecipient();
   const apiKey = process.env.AUTH_RESEND_KEY;
   if (!recipient || !apiKey) {
     console.error("Access requests are not configured (missing recipient or AUTH_RESEND_KEY)");
     return Response.json({ error: "Access requests are not available right now." }, { status: 503 });
+  }
+
+  const ipLimit = await accessRequestRateLimit.limit(`ip:${getClientIp(request)}`);
+  if (!ipLimit.success) {
+    return Response.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+  const globalLimit = await accessRequestGlobalRateLimit.limit("all");
+  if (!globalLimit.success) {
+    return Response.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
+  // Same response as a sent request, so the allowlist can't be probed.
+  if (isEmailAllowed(normalizedEmail)) {
+    return Response.json({ ok: true });
+  }
+
+  // The owner has already been told about this email; nothing more to send.
+  const emailLimit = await accessRequestRateLimit.limit(`email:${normalizedEmail}`);
+  if (!emailLimit.success) {
+    return Response.json({ ok: true });
   }
 
   try {
@@ -70,6 +83,8 @@ export async function POST(request: Request) {
           `${normalizedEmail} is requesting access to slidedude.`,
           "",
           trimmedMessage ? `Message:\n${trimmedMessage}` : "No message was included.",
+          "",
+          "This address was typed into a public form and is not verified. Confirm with the person before granting access, and be careful with any links above.",
           "",
           "To grant access, add this email to ALLOWED_EMAILS and redeploy.",
         ].join("\n"),
