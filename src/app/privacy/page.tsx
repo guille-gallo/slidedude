@@ -59,7 +59,7 @@ export default function PrivacyPage() {
           <ul className="list-inside list-disc space-y-1 pl-2">
             <li>Provide and maintain the Service</li>
             <li>Authenticate your identity</li>
-            <li>Send you magic link emails for passwordless login</li>
+            <li>Forward your access request to the site owner</li>
             <li>Store and retrieve your presentations</li>
             <li>Improve the Service</li>
           </ul>
@@ -83,7 +83,7 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong className="text-zinc-300">Resend</strong> — for sending
-              magic link emails
+              access request emails
             </li>
             <li>
               <strong className="text-zinc-300">Upstash</strong> — for session

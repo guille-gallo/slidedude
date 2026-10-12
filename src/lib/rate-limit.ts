@@ -7,14 +7,8 @@ export const apiRateLimit = new Ratelimit({
   prefix: "ratelimit:api",
 });
 
-export const magicLinkRateLimit = new Ratelimit({
+export const accessRequestRateLimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(3, "1 h"),
-  prefix: "ratelimit:magic-link:email",
-});
-
-export const magicLinkIpRateLimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(10, "1 h"),
-  prefix: "ratelimit:magic-link:ip",
+  prefix: "ratelimit:access-request",
 });

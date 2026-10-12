@@ -2,7 +2,6 @@ import "@/lib/env";
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
-import Resend from "next-auth/providers/resend";
 import { UpstashRedisAdapter } from "@auth/upstash-redis-adapter";
 import { redis } from "@/lib/redis";
 import { normalizeEmail } from "@/lib/email";
@@ -15,6 +14,15 @@ const allowedEmails = (process.env.ALLOWED_EMAILS ?? "")
 export function isEmailAllowed(email: string): boolean {
   if (allowedEmails.length === 0) return true;
   return allowedEmails.includes(normalizeEmail(email));
+}
+
+/**
+ * Where access requests from the login page are sent: `ACCESS_REQUEST_EMAIL`,
+ * or the first allowed email when it is not set.
+ */
+export function getAccessRequestRecipient(): string | null {
+  const configured = normalizeEmail(process.env.ACCESS_REQUEST_EMAIL ?? "");
+  return configured || allowedEmails[0] || null;
 }
 
 export const { handlers, auth: nextAuthAuth, signIn, signOut } = NextAuth({
@@ -31,12 +39,10 @@ export const { handlers, auth: nextAuthAuth, signIn, signOut } = NextAuth({
       clientSecret: process.env.AUTH_GITHUB_SECRET?.trim(),
       allowDangerousEmailAccountLinking: true,
     }),
-    Resend({
-      from: process.env.AUTH_EMAIL_FROM ?? "slidedude <noreply@slidedude.io>",
-    }),
   ],
   session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  // Rejected sign-ins land on /login?error=AccessDenied, where access can be requested.
+  pages: { signIn: "/login", error: "/login" },
   callbacks: {
     signIn({ user, profile }) {
       const email = profile?.email ?? user?.email;
@@ -72,7 +78,7 @@ export const { handlers, auth: nextAuthAuth, signIn, signOut } = NextAuth({
  *
  * When `E2E_BYPASS="1"` AND we are NOT in production, `auth()` returns a
  * synthetic session for `e2e@test.local`. This lets Playwright drive the app
- * without going through Google/GitHub/Resend.
+ * without going through Google/GitHub.
  *
  * Hard-guarded so a misconfigured prod deploy can't accidentally bypass auth:
  *   - The flag is opt-in (must equal the literal string "1").

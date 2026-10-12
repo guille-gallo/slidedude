@@ -18,7 +18,6 @@ vi.mock("next-auth", () => ({
 }));
 vi.mock("next-auth/providers/google", () => ({ default: vi.fn(() => ({})) }));
 vi.mock("next-auth/providers/github", () => ({ default: vi.fn(() => ({})) }));
-vi.mock("next-auth/providers/resend", () => ({ default: vi.fn(() => ({})) }));
 vi.mock("@auth/upstash-redis-adapter", () => ({
   UpstashRedisAdapter: vi.fn(() => ({})),
 }));

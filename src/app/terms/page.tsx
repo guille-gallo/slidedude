@@ -52,7 +52,7 @@ export default function TermsPage() {
           </h2>
           <p className="mb-2">
             You may sign in using a third-party authentication provider (Google,
-            GitHub) or via a magic link sent to your email address. You are
+            GitHub). You are
             responsible for maintaining the security of your account and
             authentication credentials.
           </p>

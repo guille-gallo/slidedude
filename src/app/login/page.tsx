@@ -1,16 +1,25 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [emailError, setEmailError] = useState("");
   const [oauthError, setOauthError] = useState("");
   const [oauthLoading, setOauthLoading] = useState<"google" | "github" | null>(null);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [requestSending, setRequestSending] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const [requestError, setRequestError] = useState("");
+
+  // A sign-in rejected by the allowlist comes back as /login?error=AccessDenied.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") !== "AccessDenied") return;
+    queueMicrotask(() => {
+      setOauthError("This account is not authorized. You can request access below.");
+    });
+  }, []);
 
   async function handleOAuth(provider: "google" | "github") {
     setOauthError("");
@@ -27,30 +36,28 @@ export default function LoginPage() {
     }
   }
 
-  async function handleMagicLink(e: React.FormEvent) {
+  async function handleRequestAccess(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
-    setSending(true);
-    setEmailError("");
+    setRequestSending(true);
+    setRequestError("");
 
     try {
-      const res = await fetch("/api/auth/check-email", {
+      const res = await fetch("/api/auth/request-access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), message: requestMessage }),
       });
-      const data = await res.json();
-      if (!data.allowed) {
-        setEmailError(data.error || "This email is not authorized.");
-        setSending(false);
-        return;
+      if (res.ok) {
+        setRequestSent(true);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setRequestError(data.error || "Something went wrong. Try again.");
       }
-      await signIn("resend", { email: email.trim(), callbackUrl: "/" });
-      setMagicLinkSent(true);
     } catch {
-      setEmailError("Something went wrong. Try again.");
+      setRequestError("Something went wrong. Try again.");
     }
-    setSending(false);
+    setRequestSending(false);
   }
 
   return (
@@ -120,59 +127,43 @@ export default function LoginPage() {
           <div className="h-px flex-1 bg-zinc-800" />
         </div>
 
-        {/* Magic link */}
-        {magicLinkSent ? (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-6 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <p className="text-center text-sm text-emerald-400">
-              Check your email for the login link.
-            </p>
-          </div>
+        {/* Request access */}
+        {requestSent ? (
+          <p role="status" className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-6 py-4 text-center text-sm text-emerald-400">
+            Request sent. You&apos;ll get an email if access is granted.
+          </p>
         ) : (
-          <form onSubmit={handleMagicLink} className="flex flex-col gap-3">
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                </svg>
-              </div>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full rounded-xl border border-[--border-bright] bg-white/[0.03] py-4 pl-11 pr-4 text-base text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30"
-              />
-            </div>
+          <form onSubmit={handleRequestAccess} className="flex flex-col gap-3 rounded-xl border border-[--border-bright] bg-white/[0.02] p-4">
+            <p className="text-sm text-zinc-400">Don&apos;t have access? Request it</p>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              aria-label="Your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded-lg border border-[--border-bright] bg-white/[0.03] px-3 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30"
+            />
+            <textarea
+              placeholder="Message (optional)"
+              aria-label="Message (optional)"
+              value={requestMessage}
+              onChange={(e) => setRequestMessage(e.target.value)}
+              maxLength={500}
+              rows={3}
+              className="w-full resize-none rounded-lg border border-[--border-bright] bg-white/[0.03] px-3 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30"
+            />
             <button
               type="submit"
-              disabled={sending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[--border-bright] bg-white/[0.03] px-6 py-4 text-base font-medium text-zinc-200 shadow-lg shadow-black/30 backdrop-blur-sm transition-all hover:bg-white/[0.06] hover:shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={requestSending}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-black transition-all hover:bg-emerald-400 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {sending ? (
-                <>
-                  <Spinner />
-                  Sending…
-                </>
-              ) : (
-                "Send magic link"
-              )}
+              {requestSending ? "Sending…" : "Request access"}
             </button>
-            {emailError && (
-              <div className="flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                {emailError}
-              </div>
+            {requestError && (
+              <p role="alert" className="rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                {requestError}
+              </p>
             )}
           </form>
         )}

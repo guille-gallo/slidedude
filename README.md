@@ -15,7 +15,7 @@ An animated code presentation tool for creating polished technical talks. Write 
 - **PDF export** — One-click print view (`?print=1`) waits for Shiki + Mermaid to render before opening the print dialog
 - **Drag & drop** — Reorder slides with keyboard-accessible drag and drop (@dnd-kit)
 - **Cloud sync** — Auto-saves to Upstash Redis (debounced 4s) with localStorage fallback
-- **Multi-provider auth** — Google OAuth, GitHub OAuth, and email magic link (Resend)
+- **Multi-provider auth** — Google OAuth and GitHub OAuth, with a "Request access" form for everyone else
 - **Email allowlist** — Restrict access to approved emails via `ALLOWED_EMAILS` env var
 - **Export / Import** — Back up presentations as `.slidedude.json` files (IDs regenerated on import)
 - **Presenter mode** — Separate presenter window with notes, next slide preview, section context, and elapsed timer
@@ -51,7 +51,7 @@ An animated code presentation tool for creating polished technical talks. Write 
 
 ```
 src/
-├── auth.ts                          # NextAuth config (Google, GitHub, Resend providers)
+├── auth.ts                          # NextAuth config (Google, GitHub providers)
 ├── proxy.ts                         # Middleware — gates all routes behind auth
 ├── types/index.ts                   # Domain types: Slide (code|content|mermaid), Presentation
 ├── lib/
@@ -85,7 +85,7 @@ src/
     ├── presenter/page.tsx            # Presenter notes window with section context
     └── api/
         ├── auth/[...nextauth]/route.ts   # NextAuth route handler
-        ├── auth/check-email/route.ts     # Email allowlist validation
+        ├── auth/request-access/route.ts  # "Request access" email to the owner
         └── presentations/route.ts        # GET/PUT cloud sync endpoints
 ```
 
@@ -115,15 +115,12 @@ proxy.ts (middleware)
     │
     ├─ Google OAuth ──────────────┐
     ├─ GitHub OAuth ──────────────┤
-    └─ Email magic link           │
+    │                             │
+    └─ Request access form        │
          │                        │
          ▼                        │
-    POST /api/auth/check-email    │
-         │                        │
-         ├─ Not on allowlist      │
-         │     → error message    │
-         │                        │
-         └─ Allowed ──────────────┤
+    POST /api/auth/request-access │
+    → email to the owner          │
                                   ▼
                      NextAuth callback
                           │
@@ -272,8 +269,8 @@ Keyboard/click navigation
 
 | Endpoint | Method | Auth | Purpose |
 |----------|--------|------|---------|
-| `/api/auth/[...nextauth]` | GET/POST | NextAuth | Handles OAuth and magic link flows |
-| `/api/auth/check-email` | POST | None | Validates email against allowlist |
+| `/api/auth/[...nextauth]` | GET/POST | NextAuth | Handles OAuth flows |
+| `/api/auth/request-access` | POST | None | Emails an access request to the owner (via Resend) |
 | `/api/presentations` | GET | Required | Load presentations from Redis |
 | `/api/presentations` | PUT | Required | Save presentations to Redis (409 if the stored revision changed) |
 | `/api/presentations` | DELETE | Required | Delete presentations by id (`?id=…&id=…`) |
@@ -287,7 +284,7 @@ Keyboard/click navigation
 - At least one auth provider configured:
   - [Google OAuth](https://console.cloud.google.com/apis/credentials) app
   - [GitHub OAuth](https://github.com/settings/applications/new) app
-  - [Resend](https://resend.com/) API key (for email magic link)
+  - [Resend](https://resend.com/) API key (for "Request access" emails)
 
 ### Setup
 
@@ -313,11 +310,12 @@ AUTH_GOOGLE_ID=           # Google OAuth client ID
 AUTH_GOOGLE_SECRET=       # Google OAuth client secret
 AUTH_GITHUB_ID=           # GitHub OAuth client ID
 AUTH_GITHUB_SECRET=       # GitHub OAuth client secret
-AUTH_RESEND_KEY=          # Resend API key for magic link
+AUTH_RESEND_KEY=          # Resend API key for "Request access" emails
 AUTH_EMAIL_FROM=          # Sender address (e.g. noreply@yourdomain.com)
 
 # Access control
 ALLOWED_EMAILS=           # Comma-separated emails (leave empty to allow any)
+ACCESS_REQUEST_EMAIL=     # Receives "Request access" emails (default: first allowed email)
 ```
 
 OAuth redirect URIs (for each provider):
@@ -341,8 +339,8 @@ Deploy to [Vercel](https://vercel.com) and set the environment variables in Sett
 
 ## Security
 
-- **Authentication** — Auth.js v5 with Google, GitHub, and Resend providers
-- **Email allowlist** — `ALLOWED_EMAILS` restricts who can sign in (checked in `signIn` callback and pre-send for magic link)
+- **Authentication** — Auth.js v5 with Google and GitHub providers
+- **Email allowlist** — `ALLOWED_EMAILS` restricts who can sign in (checked in the `signIn` callback)
 - **Route protection** — `proxy.ts` middleware redirects unauthenticated users to `/login`
 - **API auth** — All data endpoints verify the session server-side before accessing Redis
 - **Server-only secrets** — No `NEXT_PUBLIC_` env vars; all secrets stay on the server
@@ -356,10 +354,10 @@ Deploy to [Vercel](https://vercel.com) and set the environment variables in Sett
 - **[Zustand](https://zustand.docs.pmnd.rs/)** — State management with localStorage persistence
 - **[Shiki](https://shiki.style/) + [Shiki Magic Move](https://github.com/shikijs/shiki-magic-move)** — Syntax highlighting and animated code transitions
 - **[Auth.js v5](https://authjs.dev/)** — Multi-provider auth with JWT sessions
-- **[Upstash Redis](https://upstash.com/)** — Cloud persistence (with `@auth/upstash-redis-adapter` for magic link tokens)
+- **[Upstash Redis](https://upstash.com/)** — Cloud persistence (with `@auth/upstash-redis-adapter` for user accounts)
 - **[Tailwind CSS 4](https://tailwindcss.com/)** — Styling
 - **[Framer Motion](https://motion.dev/)** — UI animations
 - **[@dnd-kit](https://dndkit.com/)** — Drag and drop
-- **[Resend](https://resend.com/)** — Email delivery for magic link auth
+- **[Resend](https://resend.com/)** — Email delivery for access requests
 - **[Mermaid](https://mermaid.js.org/)** — Diagram-as-code rendering (lazy-loaded)
 - **[Lucide](https://lucide.dev/)** — Icons
