@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useMemo, useState, useRef } from "react";
-import { usePresentationStore } from "@/store/presentation-store";
+import { usePresentationStore, flushScheduledSave, retryPendingSync } from "@/store/presentation-store";
 import { SlideList } from "@/components/slide-list";
 import { CodeSlideEditor } from "@/components/code-slide-editor";
 import { ContentSlideEditor } from "@/components/content-slide-editor";
@@ -106,6 +106,22 @@ export default function Home() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
+
+  // Don't let a debounced save die with the tab, and retry failed syncs once
+  // the connection is back.
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden") flushScheduledSave();
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", flushScheduledSave);
+    window.addEventListener("online", retryPendingSync);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", flushScheduledSave);
+      window.removeEventListener("online", retryPendingSync);
+    };
+  }, []);
 
   useEffect(() => {
     if (!serverLoaded) return;
@@ -277,7 +293,11 @@ export default function Home() {
       : store.syncStatus === "saving"
         ? "Saving…"
         : store.syncStatus === "error"
-          ? "Offline"
+          ? store.syncErrorStatus === null
+            ? "Offline"
+            : store.syncErrorStatus === 413
+              ? "Too large to sync"
+              : "Sync failed"
           : "";
 
   return (

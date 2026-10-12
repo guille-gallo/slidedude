@@ -157,14 +157,36 @@ store.updateSlide(index, patch)
          saveToServer()
               │
               ▼
-         PUT /api/presentations
+         PUT /api/presentations { presentations, baseRevision, revision }
               │
               ▼
          auth() → get session.user.email
               │
               ▼
-         redis.set(`presentations:${email}`, data)
+         Stored revision === baseRevision?
+              ├─ yes → write presentations + new revision
+              └─ no  → 409, client reloads the server copy
 ```
+
+Every write gets a new revision id (`presentations-rev:{email}`). A save is only accepted on top of the revision the client last synced with, so a stale tab or device can't overwrite newer data. Saves run one at a time and always send the latest state.
+
+### Data flow: delete a presentation
+
+```
+store.deletePresentation(id)
+    │
+    ├─ 1. id added to `slidedude-pending-deletes` (localStorage)
+    ├─ 2. State updated in memory + localStorage
+    └─ 3. DELETE /api/presentations?id=… (immediate, not debounced)
+              │
+              ▼
+         Server removes it from the stored list
+              │
+              ▼
+         id removed from `slidedude-pending-deletes`
+```
+
+If the tab is closed or reloaded before the request completes, the pending ids are sent again on the next load, before the server copy is fetched.
 
 ### Data flow: load on startup
 
@@ -181,10 +203,14 @@ useHydration() signals ready
 store.loadFromServer()
     │
     ▼
+Pending deletions replayed (if any)
+    │
+    ▼
 GET /api/presentations
     │
     ▼
-Server data wins (if non-empty)
+Server data wins (if non-empty), unless local has unsynced
+changes based on the same revision — then those are pushed
     │
     ▼
 Store updated, UI renders
@@ -249,7 +275,8 @@ Keyboard/click navigation
 | `/api/auth/[...nextauth]` | GET/POST | NextAuth | Handles OAuth and magic link flows |
 | `/api/auth/check-email` | POST | None | Validates email against allowlist |
 | `/api/presentations` | GET | Required | Load presentations from Redis |
-| `/api/presentations` | PUT | Required | Save presentations to Redis |
+| `/api/presentations` | PUT | Required | Save presentations to Redis (409 if the stored revision changed) |
+| `/api/presentations` | DELETE | Required | Delete presentations by id (`?id=…&id=…`) |
 
 ## Getting started
 

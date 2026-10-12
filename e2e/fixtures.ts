@@ -7,6 +7,7 @@ import type { Presentation } from "../src/types";
  * - Stubs `/api/presentations` GET/PUT so tests don't need a live Redis.
  *   - GET → returns whatever the test pushed via `setServerPresentations`.
  *   - PUT → records the latest body and returns `{ ok: true }`.
+ *   - DELETE → removes the given ids from the stubbed presentations.
  * - Provides helpers to inspect/override server state per test.
  *
  * The auth side is handled by `E2E_BYPASS=1` in `playwright.config.ts`
@@ -83,7 +84,7 @@ export const test = base.extend<Fixtures>({
       else document.addEventListener("DOMContentLoaded", startObserver, { once: true });
     });
 
-    await page.route("**/api/presentations", async (route: Route) => {
+    await page.route("**/api/presentations*", async (route: Route) => {
       const method = route.request().method();
       if (method === "GET") {
         if (state.forceGetStatus !== null) {
@@ -119,6 +120,18 @@ export const test = base.extend<Fixtures>({
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({ ok: true }),
+        });
+        return;
+      }
+      if (method === "DELETE") {
+        const ids = new URL(route.request().url()).searchParams.getAll("id");
+        if (state.presentations) {
+          state.presentations = state.presentations.filter((p) => !ids.includes(p.id));
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ ok: true, revision: null, previousRevision: null }),
         });
         return;
       }
